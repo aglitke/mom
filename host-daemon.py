@@ -16,10 +16,13 @@ def read_config(fname):
     config.add_section('main')
     config.set('main', 'main-loop-interval', '60')
     config.set('main', 'host-monitor-interval', '5')
+    config.set('main', 'guest-monitor-interval', '5')
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
     config.add_section('host')
     config.set('host', 'collectors', '')
+    config.add_section('guest')
+    config.set('guest', 'collectors', '')
     config.read(fname)
 
     # Add non-customizable thread-global variables
