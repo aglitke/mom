@@ -1,0 +1,3 @@
+[main]
+# The wake up frequency of the main daemon (in seconds)
+main-loop-interval: 60
