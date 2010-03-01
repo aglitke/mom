@@ -15,6 +15,7 @@ class Monitor:
         self.properties = {}
         self.statistics = deque()
         self.collectors = []
+        self.ready = False
         
     def collect(self):
         """
