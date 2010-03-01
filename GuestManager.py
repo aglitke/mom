@@ -60,6 +60,17 @@ class GuestManager(threading.Thread):
             for dom_id in self.guests.keys():
                 self.guests[dom_id].join(2)
 
+    def interrogate(self):
+        """
+        Interrogate all active GuestMonitors
+        Return: A dictionary of Entities, indexed by guest id
+        """
+        ret = {}
+        with self.guests_sem:
+            for (id, monitor) in self.guests.items():
+                ret[id] = monitor.interrogate()
+        return ret
+
     def run(self):
         logger(LOG_INFO, "Guest Manager starting");
         interval = self.config.getint('main', 'guest-manager-interval')

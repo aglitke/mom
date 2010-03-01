@@ -1,6 +1,7 @@
 import threading
 from collections import deque
 import Collectors.Collector
+from Entity import Entity
 
 class Monitor:
     """
@@ -36,5 +37,18 @@ class Monitor:
         self.ready = True
         return data
 
-
-
+    def interrogate(self):
+        """
+        Take a snapshot of this Monitor object and return an Entity object which
+        is useful for rules processing.
+        Return: A new Entity object
+        """
+        if self.ready is False:
+            return None
+        ret = Entity()
+        with self.data_sem:
+            for prop in self.properties.keys():
+                ret._set_property(prop, self.properties[prop])
+            ret._set_statistics(self.statistics)
+        ret._finalize()
+        return ret

@@ -9,6 +9,7 @@ from libvirtInterface import libvirtInterface
 from HostMonitor import HostMonitor
 from GuestManager import GuestManager
 from Controllers.SystemController import SystemController
+from Controllers.Rules import read_rules
 
 config = None
 def read_config(fname):
@@ -54,9 +55,12 @@ def main():
     cmdline.add_option('-c', '--config-file', dest='config_file',
                        help='Load configuration from FILE', metavar='FILE',
                        default='/etc/mom.conf')
+    cmdline.add_option('-r', '--rules-file', dest='rules_file',
+                       help='Load rules from FILE', metavar='FILE',
+                       default='')
     (options, args) = cmdline.parse_args()
     read_config(options.config_file)
-    rules = None
+    rules = read_rules(options.rules_file)
 
     signal.signal(signal.SIGINT, signal_quit)
     signal.signal(signal.SIGTERM, signal_quit)
