@@ -1,0 +1,97 @@
+# Mom Rules type=script
+#
+# Autoballooning Rules:
+#
+
+#require( ('Host', 'Guest', 'Balloon') )
+
+### Constants
+# If the percentage of host free memory drops below this value
+# then we will consider the host to be under memory pressure
+pressure_threshold = 0.20
+
+# If pressure threshold drops below this level, then the pressure
+# is critical and more aggressive ballooning will be employed.
+pressure_critical = 0.05
+
+# This is the minimum percentage of free memory that an unconstrained
+# guest would like to maintain
+min_guest_free_percent = 0.20
+
+# Don't change a guest's memory by more than this percent of total memory
+max_balloon_change_percent = 0.05
+
+# Only ballooning operations that change the balloon by this percentage
+# of current guest memory should be undertaken to avoid overhead
+min_balloon_change_percent = 0.0025
+
+### Helper functions
+# Check if the proposed new balloon value is a large-enough
+# change to justify a balloon operation.  This prevents us from
+# introducing overhead through lots of small ballooning operations
+def change_big_enough(new_val):
+    global min_balloon_change_percent
+    global Guest
+    if abs(new_val - Guest.libvirt_curmem) > \
+            (min_balloon_change_percent * Guest.libvirt_curmem):
+        return True
+    else:
+        return False
+
+### Main script
+# Methodology: The goal is to shrink all guests fairly and by an amount
+# scaled to the level of host memory pressure.  If the host is under
+# severe pressure, scale back more aggressively.  We don't yet handle
+# symptoms of over-ballooning guests or try to balloon idle guests more
+# aggressively.  When the host is not under memory pressure, slowly
+# deflate the balloons.
+
+host_free_percent = Host.StatAvg('free') / Host.total
+guest_used_mem = Guest.StatAvg('libvirt_maxmem') / Guest.StatAvg('libvirt_unused')
+
+if host_free_percent < pressure_threshold:
+    # We are under memory pressure
+    if host_free_percent <= pressure_critical:
+        # Pressure is critical:
+        #   Force guest to swap by making free memory negative 
+        guest_free_percent = -0.05 + host_free_percent
+    else:
+        # Normal pressure situation
+        #   Scale the guest free memory back according to host pressure
+        guest_free_percent = min_guest_free_percent * \
+            (host_free_percent / pressure_threshold)
+
+    # Given current conditions, determine the ideal guest memory size    
+    balloon_min = guest_used_mem + \
+        (guest_free_percent * Guest.libvirt_maxmem)
+    # But do not change it too fast
+    balloon_size = Guest.libvirt_curmem * \
+        (1 - max_balloon_change_percent)
+    if balloon_size < balloon_min:
+        balloon_size = balloon_min
+
+    # Set the new target for the BalloonController.  Only set it if the
+    # value makes sense and is a large enough change to be worth it.   
+    if balloon_size >= Guest.libvirt_maxmem or \
+            change_big_enough(balloon_size):
+        Output.balloon_target = balloon_size
+else:
+    # We are not under memory pressure
+    # There is only work to do if the guest is ballooned
+    if Guest.libvirt_curmem < Guest.libvirt_maxmem:
+        # Minimally, increase so the guest has its desired free memory
+        balloon_min = guest_used_mem + \
+            (min_guest_free_percent * Guest.libvirt_maxmem)
+        # Otherwise, increase according to the max balloon change
+        balloon_size = Guest.libvirt_curmem * \
+            (1 + max_balloon_change_percent)
+
+        
+        # Determine the new target for the BalloonController.  Only set
+        # if the value is a large enough for the change to be worth it. 
+        if balloon_size > Guest.libvirt_maxmem:
+            balloon_size = Guest.libvirt_maxmem
+        if balloon_size < balloon_min:
+            balloon_size = balloon_min
+        if change_big_enough(balloon_size):
+            Output.balloon_target = balloon_size
