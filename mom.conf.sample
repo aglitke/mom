@@ -9,6 +9,10 @@ host-monitor-interval: 5
 # calculating moving averages.
 sample-history-length: 10
 
+# The URI to use when connecting to this host's libvirt interface.  If this is
+# left blank then the system default URI is used.
+libvirt-hypervisor-uri: 
+
 [host]
-# A comma-separated list of Collector plugins to use for Host data collection
+# A comma-separated list of Collector plugins to use for Host data collection.
 collectors:

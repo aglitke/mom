@@ -5,6 +5,7 @@ import time
 from optparse import OptionParser
 import ConfigParser
 from MomUtils import *
+from libvirtInterface import libvirtInterface
 from HostMonitor import HostMonitor
 
 config = None
@@ -16,6 +17,7 @@ def read_config(fname):
     config.set('main', 'main-loop-interval', '60')
     config.set('main', 'host-monitor-interval', '5')
     config.set('main', 'sample-history-length', '10')
+    config.set('main', 'libvirt-hypervisor-uri', '')
     config.add_section('host')
     config.set('host', 'collectors', '')
     config.read(fname)
@@ -49,6 +51,10 @@ def main():
 
     signal.signal(signal.SIGINT, signal_quit)
     signal.signal(signal.SIGTERM, signal_quit)
+
+    # Set up a shared libvirt connection
+    uri = config.get('main', 'libvirt-hypervisor-uri')
+    libvirt_iface = libvirtInterface(uri)
 
     # Start threads
     logger(LOG_DEBUG, "Daemon starting")
