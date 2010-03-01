@@ -27,4 +27,4 @@ collectors: HostMemory
 
 [guest]
 # A comma-separated list of Collector plugins to use for Guest data collection.
-collectors: 
+collectors: GuestQemuProc
