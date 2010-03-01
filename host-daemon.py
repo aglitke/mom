@@ -8,6 +8,7 @@ from MomUtils import *
 from libvirtInterface import libvirtInterface
 from HostMonitor import HostMonitor
 from GuestManager import GuestManager
+from Controllers.SystemController import SystemController
 
 config = None
 def read_config(fname):
@@ -19,8 +20,10 @@ def read_config(fname):
     config.set('main', 'host-monitor-interval', '5')
     config.set('main', 'guest-manager-interval', '5')
     config.set('main', 'guest-monitor-interval', '5')
+    config.set('main', 'system-controller-interval', '10')
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
+    config.set('main', 'controllers', '')
     config.add_section('host')
     config.set('host', 'collectors', 'HostMemory')
     config.add_section('guest')
@@ -53,6 +56,7 @@ def main():
                        default='/etc/mom.conf')
     (options, args) = cmdline.parse_args()
     read_config(options.config_file)
+    rules = None
 
     signal.signal(signal.SIGINT, signal_quit)
     signal.signal(signal.SIGTERM, signal_quit)
@@ -66,13 +70,16 @@ def main():
     config.set('main', 'running', '1')
     host_monitor = HostMonitor(config)
     guest_manager = GuestManager(config, libvirt_iface)
+    system_controller = SystemController(config, rules, libvirt_iface, \
+                            host_monitor, guest_manager)
 
     interval = config.getint('main', 'main-loop-interval')
     while config.getint('main', 'running') == 1:
         time.sleep(interval)
-        if not threads_ok((host_monitor,guest_manager)):
+        if not threads_ok((host_monitor,guest_manager,system_controller)):
             config.set('main', 'running', '0')
 
+    system_controller.join(10)
     guest_manager.join(5)
     host_monitor.join(5)
     logger(LOG_INFO, "Daemon ending")
