@@ -34,9 +34,10 @@ class SystemController(threading.Thread):
             if name == '':
                 continue
             try:
-                module = __import__(name, None, None, name)
+                module = __import__('Controllers.' + name, None, None, name)
+                logger(LOG_DEBUG, "Loaded %s controller", name)
             except ImportError:
-                logger("Unable to import controller: %s", name)
+                logger(LOG_WARN, "Unable to import controller: %s", name)
                 continue
             self.controllers.append(module.instance(self.properties))
 
@@ -53,7 +54,8 @@ class SystemController(threading.Thread):
         for i in guest_list:
             if guest_list[i] is not None:
                 entities = { 'Host': host, 'Guest': guest_list[i] }
-                Rules.evaluate(self.rules, entities)
+                if Rules.evaluate(self.rules, entities) is False:
+                    continue
                 for c in self.controllers:
                     c.process_guest(entities)
 

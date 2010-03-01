@@ -19,7 +19,7 @@ guest-manager-interval: 5
 system-controller-interval: 10
 
 # A comma-separated list of Controller plugins to enable
-controllers: 
+controllers: Balloon
 
 # Sets the maximum number of statistic samples to keep for the purpose of
 # calculating moving averages.
