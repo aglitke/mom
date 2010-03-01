@@ -23,7 +23,7 @@ libvirt-hypervisor-uri:
 
 [host]
 # A comma-separated list of Collector plugins to use for Host data collection.
-collectors:
+collectors: HostMemory
 
 [guest]
 # A comma-separated list of Collector plugins to use for Guest data collection.

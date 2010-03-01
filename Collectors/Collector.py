@@ -1,3 +1,6 @@
+import re
+import sys
+
 class Collector:
     """
     Collectors are plugins that return a specific set of data items pertinent to
@@ -47,3 +50,28 @@ def get_collectors(config_str, properties):
             continue
         collectors.append(module.instance(properties))
     return collectors
+
+#
+# Collector utility functions
+#
+def open_datafile(filename):
+    """
+    Open a data file for reading.
+    """
+    try:
+        filevar = open(filename, 'r')
+    except IOError as (errno, strerror):
+        print "Cannot open %s: %s" % (filename, strerror)
+        sys.exit(1)
+    return filevar
+
+def parse_int(regex, src):
+    """
+    Parse a body of text according to the provided regular expression and return
+    the first match as an integer.
+    """
+    m = re.search(regex, src, re.M)
+    if m:
+        return int(m.group(1))
+    else:
+        return None

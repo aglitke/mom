@@ -22,7 +22,7 @@ def read_config(fname):
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
     config.add_section('host')
-    config.set('host', 'collectors', '')
+    config.set('host', 'collectors', 'HostMemory')
     config.add_section('guest')
     config.set('guest', 'collectors', '')
     config.read(fname)
