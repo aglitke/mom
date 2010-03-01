@@ -24,7 +24,7 @@ def read_config(fname):
     config.add_section('host')
     config.set('host', 'collectors', 'HostMemory')
     config.add_section('guest')
-    config.set('guest', 'collectors', 'GuestQemuProc')
+    config.set('guest', 'collectors', 'GuestQemuProc, GuestLibvirt')
     config.read(fname)
 
     # Add non-customizable thread-global variables
