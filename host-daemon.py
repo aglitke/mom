@@ -13,6 +13,7 @@ def read_config(fname):
     # Set defaults
     config.add_section('main')
     config.set('main', 'main-loop-interval', '60')
+    config.set('main', 'sample-history-length', '10')
     config.read(fname)
 
     # Add non-customizable thread-global variables

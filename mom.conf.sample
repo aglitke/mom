@@ -1,3 +1,7 @@
 [main]
 # The wake up frequency of the main daemon (in seconds)
 main-loop-interval: 60
+
+# Sets the maximum number of statistic samples to keep for the purpose of
+# calculating moving averages.
+sample-history-length: 10
