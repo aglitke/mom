@@ -7,6 +7,7 @@ import ConfigParser
 from MomUtils import *
 from libvirtInterface import libvirtInterface
 from HostMonitor import HostMonitor
+from GuestManager import GuestManager
 
 config = None
 def read_config(fname):
@@ -16,6 +17,7 @@ def read_config(fname):
     config.add_section('main')
     config.set('main', 'main-loop-interval', '60')
     config.set('main', 'host-monitor-interval', '5')
+    config.set('main', 'guest-manager-interval', '5')
     config.set('main', 'guest-monitor-interval', '5')
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
@@ -63,13 +65,15 @@ def main():
     logger(LOG_DEBUG, "Daemon starting")
     config.set('main', 'running', '1')
     host_monitor = HostMonitor(config)
+    guest_manager = GuestManager(config, libvirt_iface)
 
     interval = config.getint('main', 'main-loop-interval')
     while config.getint('main', 'running') == 1:
         time.sleep(interval)
-        if not threads_ok((host_monitor,)):
+        if not threads_ok((host_monitor,guest_manager)):
             config.set('main', 'running', '0')
 
+    guest_manager.join(5)
     host_monitor.join(5)
     logger(LOG_INFO, "Daemon ending")
     exit(0)

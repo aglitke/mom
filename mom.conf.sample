@@ -8,6 +8,11 @@ host-monitor-interval: 5
 # The data collection interval for guest statistics (in seconds)
 guest-monitor-interval: 5
 
+# The wake up frequency of the guest manager (in seconds).  The guest manager
+# sets up monitoring and control for newly-created guests and cleans up after
+# deleted guests.
+guest-manager-interval: 5
+
 # Sets the maximum number of statistic samples to keep for the purpose of
 # calculating moving averages.
 sample-history-length: 10
