@@ -38,10 +38,13 @@ class GuestLibvirt(Collector):
         # Try to collect memory stats.  This function may not be available
         try:
             info = self.domain.memoryStats()
+            if len(info.keys()) == 0:
+                raise CollectionError('libvirt memoryStats() is not ready')
             for key in info.keys():
                 ret['libvirt_' + key] = info[key]
         except AttributeError:
-            print "Mem stats not available"
+            raise CollectionError('This version of libvirt does not support '\
+                                  'memory statistics.')
 
         return ret
         
