@@ -1,7 +1,8 @@
 import threading
 from collections import deque
-import Collectors.Collector
+from Collectors import Collector
 from Entity import Entity
+from MomUtils import *
 
 class Monitor:
     """
@@ -27,8 +28,13 @@ class Monitor:
         Return: The dictionary of collected statistics
         """
         data = {}
-        for c in self.collectors:
-            data.update(c.collect())
+        try:
+            for c in self.collectors:
+                data.update(c.collect())
+        except Collector.CollectionError as e:
+            logger(LOG_DEBUG, "Collection error: %s", e.message)
+            self.ready = False
+            return None
 
         with self.data_sem:
             self.statistics.append(data)

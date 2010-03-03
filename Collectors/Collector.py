@@ -52,6 +52,17 @@ def get_collectors(config_str, properties):
     return collectors
 
 #
+# Collector Exceptions
+#
+class CollectionError(Exception):
+    """
+    This exception should be raised if a Collector has a problem during its
+    collect() operation and it cannot return a complete, coherent data set.
+    """
+    def __init__(self, msg):
+        self.message = msg
+
+#
 # Collector utility functions
 #
 def open_datafile(filename):
