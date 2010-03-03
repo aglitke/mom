@@ -13,8 +13,9 @@ class Balloon():
         
     def process_guest(self, entities):
         
-        target = int(entities['Output'].Var('balloon_target'))
+        target = entities['Output'].Var('balloon_target')
         if target is not None:
+            target = int(target)
             id = entities['Guest'].Prop('id')
             prev_target = entities['Guest'].Stat('libvirt_curmem')
             logger(LOG_INFO, "Ballooning guest:%s from %s to %s", \
