@@ -11,11 +11,15 @@ class libvirtInterface:
     def __init__(self, uri):
         self.conn = None
         self.uri = uri
+        libvirt.registerErrorHandler(self._error_handler, None)
         self._connect()
 
     def __del__(self):
         if self.conn is not None:
             self.conn.close()
+
+    def _error_handler(ctx, error):
+        pass
 
     def _connect(self):
         try:
@@ -59,8 +63,47 @@ class libvirtInterface:
             self.handleException(e)
         return False
         
+    def domainGetName(self, domain):
+        try:
+            name = domain.name()
+        except libvirt.libvirtError as e:
+            self.handleException(e)
+            return None
+        return name
+            
+    def domainGetUUID(self, domain):
+        try:
+            uuid = domain.UUIDString()
+        except libvirt.libvirtError as e:
+            self.handleException(e)
+            return None
+        return uuid
+        
+    def domainGetInfo(self, domain):
+        try:
+            info = domain.info()
+        except libvirt.libvirtError as e:
+            self.handleException(e)
+            return None
+        return info
+        
+    def domainGetMemoryStats(self, domain):
+        try:
+            stats = domain.memoryStats()
+        except libvirt.libvirtError as e:
+            self.handleException(e)
+            return None
+        return stats
+        
+    def domainSetBalloonTarget(self, domain, target):
+        try:
+            return domain.setMemory(target)
+        except libvirt.libvirtError as e:
+            self.handleException(e)
+            return False
+        
     def handleException(self, e):
-        reconnect_errors = (libvirt.VIR_ERR_SYSTEM_ERROR,)
+        reconnect_errors = (libvirt.VIR_ERR_SYSTEM_ERROR,libvirt.VIR_ERR_INVALID_CONN)
         error = e.get_error_code()
         if error in reconnect_errors:
             logger (LOG_WARN, 'libvirtInterface: connection lost, reconnecting.')

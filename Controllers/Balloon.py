@@ -1,4 +1,3 @@
-import libvirt
 import libvirtInterface
 from MomUtils import *
 
@@ -22,10 +21,8 @@ class Balloon():
                     id, prev_target, target)
             dom = self.libvirt_iface.getDomainFromID(id)
             if dom is not None:
-                try:
-                    ret = dom.setMemory(target)
-                except libvirt.libvirtError as e:
-                    logger("libvirt error while ballooning: %s", e.message)
+                if self.libvirt_iface.domainSetBalloonTarget(dom, target):
+                    logger(LOG_WARN, "Error while ballooning guest:%i", id)
 
 def instance(properties):
     return Balloon(properties)

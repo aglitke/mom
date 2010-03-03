@@ -1,6 +1,5 @@
 import threading
 import time
-import libvirt
 import sys
 import re
 from MomUtils import *
@@ -29,6 +28,8 @@ class GuestManager(threading.Thread):
         longer running.
         """
         dom_list = self.libvirt_iface.listDomainsID()
+        if dom_list is None:
+            return
         with self.guests_sem:
             for dom_id in dom_list:
                 if dom_id not in self.guests:
@@ -46,10 +47,12 @@ class GuestManager(threading.Thread):
         """
         Remove any GuestMonitors that no longer correspond to a running guest
         """
+        domain_list = self.libvirt_iface.listDomainsID()
+        if domain_list is None:
+            return
         libvirt_doms = set(self.libvirt_iface.listDomainsID())
         with self.guests_sem:
-            guest_doms = set(self.guests)
-            for dom_id in guest_doms - libvirt_doms:
+            for dom_id in set(self.guests) - set(domain_list):
                 del self.guests[dom_id]
 
     def wait_for_guest_monitors(self):

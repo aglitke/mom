@@ -29,7 +29,10 @@ class GuestLibvirt(Collector):
         self.domain = self.iface.getDomainFromID(properties['id'])
 
     def collect(self):
-        info = self.domain.info()        
+        info = self.iface.domainGetInfo(self.domain)
+        if info is None:
+            raise CollectionError('Failed to get domain info')
+
         ret =  {
             'libvirt_state': info[0], 'libvirt_maxmem': info[1],
             'libvirt_curmem': info[2],
@@ -37,8 +40,8 @@ class GuestLibvirt(Collector):
 
         # Try to collect memory stats.  This function may not be available
         try:
-            info = self.domain.memoryStats()
-            if len(info.keys()) == 0:
+            info = self.iface.domainGetMemoryStats(self.domain)
+            if info is None or len(info.keys()) == 0:
                 raise CollectionError('libvirt memoryStats() is not ready')
             for key in info.keys():
                 ret['libvirt_' + key] = info[key]

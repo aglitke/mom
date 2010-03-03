@@ -36,12 +36,11 @@ class GuestMonitor(Monitor, threading.Thread):
         self.libvirt_iface = libvirt_iface
         self.properties['id'] = id
         self.properties['libvirt_iface'] = libvirt_iface
-        self.guest_domain = self.libvirt_iface.getDomainFromID(id)
-        if self.guest_domain is None:
-            logger(LOG_WARN, "No domain for guest:%s -- monitor can't start", \
-                    self.properties['id'])
-            return 
-        self.get_guest_info()
+
+        if not self.get_guest_info():
+            logger(LOG_ERROR, "Failed to get guest:%s information -- monitor "\
+                    "can't start", self.properties['id'])
+            return
         collector_list = self.config.get('guest', 'collectors')
         self.collectors = Collector.get_collectors(collector_list,
                             self.properties)
@@ -50,14 +49,23 @@ class GuestMonitor(Monitor, threading.Thread):
     def get_guest_info(self):
         """
         Set up some basic guest properties
+        Returns: True on success, False otherwise
         """
-        uuid = self.guest_domain.UUIDString()
+        id = self.properties['id']
+        self.guest_domain = self.libvirt_iface.getDomainFromID(id)
+        if self.guest_domain is None:
+            return False
+        uuid = self.libvirt_iface.domainGetUUID(self.guest_domain)
+        name = self.libvirt_iface.domainGetName(self.guest_domain)
         pid = get_guest_pid(uuid)
-        name = self.guest_domain.name()
+        for var in (uuid, name, pid):
+            if var is None:
+                return False
         with self.data_sem:
             self.properties['uuid'] = uuid
             self.properties['pid'] = pid
             self.properties['name'] = name
+        return True
 
     def run(self):
         logger(LOG_INFO, "%s starting", self.name)
