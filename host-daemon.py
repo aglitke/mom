@@ -24,7 +24,7 @@ def read_config(fname):
     config.set('main', 'system-controller-interval', '10')
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
-    config.set('main', 'controllers', '')
+    config.set('main', 'controllers', 'Balloon')
     config.add_section('host')
     config.set('host', 'collectors', 'HostMemory')
     config.add_section('guest')
