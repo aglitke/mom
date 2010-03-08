@@ -2,12 +2,14 @@ from Collector import *
 
 class GuestQemuProc(Collector):
     """
-    This Collector returns statistics about a guest's running qemu process.
-        host_minor_faults - The number of minor faults caused by the process
-                            since the last collection.
-        host_major_faults - The number of major faults caused by the process
-                            since the last collection.
-        Major faults generally require disk IO to satisfy, minor faults do not.
+    This Collector returns host fault statistics for the qemu process
+    representing a guest.
+        host_minor_faults - The number of host minor faults a guest's qemu
+                            process caused since the last collection.
+        host_major_faults - The number of host major faults a guest's qemu
+                            process caused since the last collection.
+    Host major faults generally require host disk IO to satisfy, host minor
+    faults do not.
     """
     def __init__(self, properties):
         self.pid = properties['pid']
