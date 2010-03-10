@@ -2,6 +2,8 @@
 
 import signal
 import time
+import os
+import re
 from optparse import OptionParser
 import ConfigParser
 from MomUtils import *
@@ -25,6 +27,7 @@ def read_config(fname):
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
     config.set('main', 'controllers', 'Balloon')
+    config.set('main', 'plot-basedir', '')
     config.add_section('host')
     config.set('host', 'collectors', 'HostMemory')
     config.add_section('guest')
@@ -33,6 +36,42 @@ def read_config(fname):
 
     # Add non-customizable thread-global variables
     config.set('main', 'running', '0')
+    plot_dir = get_plot_dir(config.get('main', 'plot-basedir'))
+    config.set('main', 'plot-dir', plot_dir)
+
+def get_plot_dir(basedir):
+    """
+    Create a new directory for plot files inside basedir.  The name is in the
+    format: momplot-NNN where NNN is an ascending sequence number.
+    Return: The new directory name or '' on error.
+    """
+    if basedir == '':
+        return ''
+
+    regex = re.compile('^momplot-(\d{3})$')
+    try:
+        names = os.listdir(basedir)
+    except OSError as e:
+        logger (LOG_WARN, "Cannot read plot-basedir %s: %s", basedir,
+                          e.strerror)
+        return ''
+    seq_num = -1
+    for name in names:
+        m = regex.match(name)
+        if m is not None:
+            seq_num = int(m.group(1))
+    seq_num = seq_num + 1
+    dir = "%s/momplot-%03d" % (basedir, seq_num)
+    if seq_num > 999:
+        logger (LOG_WARN, "Cannot create plot-dir because the sequence number "\
+              "is out of range.  Clear the directory or choose a different one")
+        return ''
+    try:
+        os.mkdir(dir)
+    except OSError as e:
+        logger (LOG_WARN, "Cannot create plot-dir %s: %s", dir, e.strerror)
+        return ''
+    return dir
 
 def signal_quit(signum, frame):
     global config

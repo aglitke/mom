@@ -1,7 +1,9 @@
 import threading
+import ConfigParser
 from collections import deque
 from Collectors import Collector
 from Entity import Entity
+from Plotter import Plotter
 from MomUtils import *
 
 class Monitor:
@@ -11,12 +13,19 @@ class Monitor:
     static such as a name or ID.  Additionally, statistics are collected over
     time and queued so averages and trends can be analyzed.
     """
-    def __init__(self):
+    def __init__(self, config, name):
         # Guard the data with a semaphore to ensure consistency.
         self.data_sem = threading.Semaphore()
         self.properties = {}
         self.statistics = deque()
         self.collectors = []
+        
+        plot_dir = config.get('main', 'plot-dir')
+        if plot_dir != '':
+            self.plotter = Plotter(plot_dir, name)
+        else:
+            self.plotter = None
+        
         self.ready = False
         
     def collect(self):
@@ -41,6 +50,10 @@ class Monitor:
             if len(self.statistics) > self.config.getint('main', 'sample-history-length'):
                 self.statistics.popleft()
         self.ready = True
+        
+        if self.plotter is not None:
+            self.plotter.plot(data)
+        
         return data
 
     def interrogate(self):
