@@ -29,8 +29,8 @@ class GuestMonitor(Monitor, threading.Thread):
     A GuestMonitor thread collects and reports statistics about 1 running guest
     """
     def __init__(self, config, id, libvirt_iface):
-        Monitor.__init__(self)
-        threading.Thread.__init__(self, name="GuestMonitor(%s)" % id)
+        threading.Thread.__init__(self, name="GuestMonitor-%s" % id)
+        Monitor.__init__(self, config, self.name)
         self.daemon = True
         self.config = config
         self.libvirt_iface = libvirt_iface
@@ -73,7 +73,7 @@ class GuestMonitor(Monitor, threading.Thread):
         while self.config.getint('main', 'running') == 1:
             if not self.libvirt_iface.domainIsRunning(self.guest_domain):
                 break
-            self.collect()
+            data = self.collect()
             time.sleep(interval)
         logger(LOG_INFO, "%s ending", self.name)
 
