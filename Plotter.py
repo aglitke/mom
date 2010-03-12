@@ -23,7 +23,8 @@ class Plotter:
             return
         if self.write_header:
             self.write_header = False
-            self.keys = data.keys().sort()
+            self.keys = data.keys()
+            self.keys.sort()
             header = '# time\t ' + '\t'.join(map(str, self.keys)) + '\n'
             self.file.write(header)
         time_val = str(time.time())
