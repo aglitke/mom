@@ -1,9 +1,7 @@
 # Mom Rules type=script
 #
-# Autoballooning Rules:
+# Rules for autoballooning and KSM control
 #
-
-#require( ('Host', 'Guest', 'Balloon') )
 
 ### Ballooning #################################################################
 
@@ -124,7 +122,7 @@ ksm_free_percent = 0.20
 
 ### Helper functions
 def change_npages(delta):
-    global ksm_npages_min ksm_npages_max Host Output
+    global ksm_npages_min, ksm_npages_max, Host, Output
 
     newval = Host.ksm_pages_to_scan + delta
     if newval > ksm_npages_max:
@@ -132,6 +130,13 @@ def change_npages(delta):
     elif newval < ksm_npages_min:
         newval = ksm_npages_min
     Output.ksm_pages_to_scan = newval
+
+### Main Script
+# Methodology: Since running KSM does incur some overhead, try to run it only 
+# when necessary.  If the amount of committed KSM shareable memory is high or if
+# free memory is low, enable KSM to try to increase free memory.  Large memory
+# machines should scan more often than small ones.  Likewise, machines under
+# memory pressure should scan more aggressively then more idle machines.
 
 ksm_pressure_threshold = Host.total * ksm_free_percent
 ksm_committed = Host.ksm_shareable
