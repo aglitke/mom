@@ -59,7 +59,9 @@ def get_plot_dir(basedir):
     for name in names:
         m = regex.match(name)
         if m is not None:
-            seq_num = int(m.group(1))
+            num =  int(m.group(1))
+            if num > seq_num:
+                seq_num = num
     seq_num = seq_num + 1
     dir = "%s/momplot-%03d" % (basedir, seq_num)
     if seq_num > 999:
