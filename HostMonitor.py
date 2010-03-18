@@ -18,12 +18,15 @@ class HostMonitor(Monitor, threading.Thread):
         collector_list = self.config.get('host', 'collectors')
         self.collectors = Collector.get_collectors(collector_list,
                             self.properties)
+        if self.collectors is None:
+            logger (LOG_ERROR, "Host Monitor initialization failed")
+            return
         self.start()
 
     def run(self):
         logger(LOG_INFO, "Host Monitor starting")
         interval = self.config.getint('main', 'host-monitor-interval')
-        while self.config.getint('main', 'running') == 1:
+        while self._should_run():
             data = self.collect()
             time.sleep(interval)
         logger(LOG_INFO, "Host Monitor ending")

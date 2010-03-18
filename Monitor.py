@@ -27,6 +27,7 @@ class Monitor:
             self.plotter = None
         
         self.ready = False
+        self.terminate = False
         
     def collect(self):
         """
@@ -43,6 +44,11 @@ class Monitor:
         except Collector.CollectionError as e:
             logger(LOG_DEBUG, "Collection error: %s", e.message)
             self.ready = False
+            return None
+        except Collector.FatalError as e:
+            logger(LOG_ERROR, "Fatal Collector error: %s", e.message)
+            self.ready = False
+            self.terminate = True
             return None
 
         with self.data_sem:
@@ -71,3 +77,12 @@ class Monitor:
             ret._set_statistics(self.statistics)
         ret._finalize()
         return ret
+        
+    def _should_run(self):
+        """
+        Private helper to determine if the Monitor should continue to run.
+        """
+        if self.config.getint('main', 'running') == 1 and not self.terminate:
+            return True
+        else:
+            return False

@@ -61,7 +61,8 @@ class GuestManager(threading.Thread):
         """
         with self.guests_sem:
             for dom_id in self.guests.keys():
-                self.guests[dom_id].join(2)
+                if self.guests[dom_id].is_alive():
+                    self.guests[dom_id].join(2)
 
     def interrogate(self):
         """

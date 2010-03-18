@@ -44,6 +44,9 @@ class GuestMonitor(Monitor, threading.Thread):
         collector_list = self.config.get('guest', 'collectors')
         self.collectors = Collector.get_collectors(collector_list,
                             self.properties)
+        if self.collectors is None:
+            logger(LOG_ERROR, "Guest Monitor initialization failed")
+            return
         self.start()
                             
     def get_guest_info(self):
@@ -70,7 +73,7 @@ class GuestMonitor(Monitor, threading.Thread):
     def run(self):
         logger(LOG_INFO, "%s starting", self.name)
         interval = self.config.getint('main', 'guest-monitor-interval')
-        while self.config.getint('main', 'running') == 1:
+        while self._should_run():
             if not self.libvirt_iface.domainIsRunning(self.guest_domain):
                 break
             data = self.collect()

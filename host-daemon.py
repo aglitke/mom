@@ -88,6 +88,13 @@ def threads_ok(threads):
         if not t.is_alive():
             return False
     return True
+    
+def wait_for_thread(t, timeout):
+    """
+    Join a thread only if it is still running
+    """
+    if t.is_alive():
+        t.join(timeout)
 
 def main():
     global config
@@ -124,9 +131,9 @@ def main():
         if not threads_ok((host_monitor,guest_manager,system_controller)):
             config.set('main', 'running', '0')
 
-    system_controller.join(10)
-    guest_manager.join(5)
-    host_monitor.join(5)
+    wait_for_thread(system_controller, 10)
+    wait_for_thread(guest_manager, 5)
+    wait_for_thread(host_monitor, 5)
     logger(LOG_INFO, "Daemon ending")
     exit(0)
 

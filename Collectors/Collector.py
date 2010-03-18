@@ -1,5 +1,6 @@
 import re
 import sys
+from MomUtils import *
 
 class Collector:
     """
@@ -45,10 +46,13 @@ def get_collectors(config_str, properties):
             continue
         try:
             module = __import__('Collectors.' + name, None, None, name)
+            collectors.append(module.instance(properties))
         except ImportError:
             logger(LOG_WARN, "Unable to import collector: %s", name)
-            continue
-        collectors.append(module.instance(properties))
+            return None
+        except FatalError as e:
+            logger(LOG_ERROR, "Fatal Collector error: %s", e.message)
+            return None
     return collectors
 
 #
@@ -58,6 +62,14 @@ class CollectionError(Exception):
     """
     This exception should be raised if a Collector has a problem during its
     collect() operation and it cannot return a complete, coherent data set.
+    """
+    def __init__(self, msg):
+        self.message = msg
+
+class FatalError(Exception):
+    """
+    This exception should be raised if a Collector has a permanent problem that
+    will prevent it from initializing or collecting any data.
     """
     def __init__(self, msg):
         self.message = msg
