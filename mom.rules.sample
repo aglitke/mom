@@ -5,6 +5,8 @@
 
 #require( ('Host', 'Guest', 'Balloon') )
 
+### Ballooning #################################################################
+
 ### Constants
 # If the percentage of host free memory drops below this value
 # then we will consider the host to be under memory pressure
@@ -95,3 +97,55 @@ else:
             balloon_size = balloon_min
         if change_big_enough(balloon_size):
             Output.balloon_target = balloon_size
+
+### KSM ########################################################################
+
+### Constants
+# The number of pages to add when increasing pages_to_scan
+ksm_pages_boost = 300
+
+# The number of pages to subtract when decreasing pages_to_scan
+ksm_pages_decay = -50
+
+# The min and max number of pages to scan per cycle when ksm is activated
+ksm_npages_min = 64
+ksm_npages_max = 1250
+
+# The number of ms to sleep between ksmd scans for a 16GB system.  Systems with
+# more memory will sleep less, while smaller systems will sleep more.
+ksm_sleep_ms_baseline = 10
+
+# A virtualization host tends to use most of its memory for running guests but
+# a certain amount is reserved for the host OS, non virtualization-related work,
+# and as a failsafe.  When free memory (including memory used for caches) drops
+# below this parcentage of total memory, the host is deemed under pressure. and
+# KSM will be started to try and free up some memory.
+ksm_free_percent = 0.20
+
+### Helper functions
+def change_npages(delta):
+    global ksm_npages_min ksm_npages_max Host Output
+
+    newval = Host.ksm_pages_to_scan + delta
+    if newval > ksm_npages_max:
+        newval = ksm_npages_max
+    elif newval < ksm_npages_min:
+        newval = ksm_npages_min
+    Output.ksm_pages_to_scan = newval
+
+ksm_pressure_threshold = Host.total * ksm_free_percent
+ksm_committed = Host.ksm_shareable
+
+if ksm_pressure_threshold + ksm_committed < Host.total and \
+        Host.StatAvg('free') > ksm_pressure_threshold:
+    # Disable KSM because memory isn't overcommited to qemu processes and
+    # there is enough free memory.
+    Output.ksm_status = 0
+else:
+    Output.ksm_status = 1
+    Output.ksm_sleep_millisecs = ksm_sleep_ms_baseline * \
+                                    16 * 1024 * 1024 / Host.total 
+    if Host.StatAvg('free') < ksm_pressure_threshold:
+        change_npages(ksm_pages_boost)
+    else:
+        change_npages(ksm_pages_decay)
