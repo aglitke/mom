@@ -145,9 +145,9 @@ if ksm_pressure_threshold + ksm_committed < Host.total and \
         Host.StatAvg('free') > ksm_pressure_threshold:
     # Disable KSM because memory isn't overcommited to qemu processes and
     # there is enough free memory.
-    Output.ksm_status = 0
+    Output.ksm_run = 0
 else:
-    Output.ksm_status = 1
+    Output.ksm_run = 1
     Output.ksm_sleep_millisecs = ksm_sleep_ms_baseline * \
                                     16 * 1024 * 1024 / Host.total 
     if Host.StatAvg('free') < ksm_pressure_threshold:
