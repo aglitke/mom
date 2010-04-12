@@ -20,7 +20,7 @@ class Monitor:
         self.statistics = deque()
         self.collectors = []
         
-        plot_dir = config.get('main', 'plot-dir')
+        plot_dir = config.get('main', 'plot-subdir')
         if plot_dir != '':
             self.plotter = Plotter(plot_dir, name)
         else:

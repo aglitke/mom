@@ -14,7 +14,7 @@ from Controllers.SystemController import SystemController
 from Controllers.Rules import read_rules
 
 config = None
-def read_config(fname):
+def read_config(fname, options):
     global config
     config = ConfigParser.SafeConfigParser()
     # Set defaults
@@ -27,19 +27,23 @@ def read_config(fname):
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
     config.set('main', 'controllers', 'Balloon')
-    config.set('main', 'plot-basedir', '')
+    config.set('main', 'plot-dir', '')
     config.add_section('host')
     config.set('host', 'collectors', 'HostMemory')
     config.add_section('guest')
     config.set('guest', 'collectors', 'GuestQemuProc, GuestLibvirt')
     config.read(fname)
+    
+    # Process command line overrides
+    if options.plot_dir is not None:
+        config.set('main', 'plot-dir', options.plot_dir)
 
     # Add non-customizable thread-global variables
     config.set('main', 'running', '0')
-    plot_dir = get_plot_dir(config.get('main', 'plot-basedir'))
-    config.set('main', 'plot-dir', plot_dir)
+    plot_subdir = get_plot_subdir(config.get('main', 'plot-dir'))
+    config.set('main', 'plot-subdir', plot_subdir)
 
-def get_plot_dir(basedir):
+def get_plot_subdir(basedir):
     """
     Create a new directory for plot files inside basedir.  The name is in the
     format: momplot-NNN where NNN is an ascending sequence number.
@@ -103,11 +107,13 @@ def main():
     cmdline.add_option('-c', '--config-file', dest='config_file',
                        help='Load configuration from FILE', metavar='FILE',
                        default='/etc/mom.conf')
-    cmdline.add_option('-r', '--rules-file', dest='rules_file',
-                       help='Load rules from FILE', metavar='FILE',
-                       default='')
+    cmdline.add_option('-r', '--rules-file', dest='rules_file', default='',
+                       help='Load rules from FILE', metavar='FILE')
+    cmdline.add_option('-p', '--plot-dir', dest='plot_dir',
+                       help='Save data plot files in DIR', metavar='DIR')
+    
     (options, args) = cmdline.parse_args()
-    read_config(options.config_file)
+    read_config(options.config_file, options) 
     rules = read_rules(options.rules_file)
 
     signal.signal(signal.SIGINT, signal_quit)
