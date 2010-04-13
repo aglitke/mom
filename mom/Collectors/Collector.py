@@ -46,7 +46,7 @@ def get_collectors(config_str, properties):
         if name == '':
             continue
         try:
-            module = __import__('Collectors.' + name, None, None, name)
+            module = __import__('mom.Collectors.' + name, None, None, name)
             collectors.append(module.instance(properties))
         except ImportError:
             logger.warn("Unable to import collector: %s", name)

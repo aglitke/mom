@@ -8,11 +8,11 @@ from optparse import OptionParser
 import ConfigParser
 import logging
 import logging.handlers
-from libvirtInterface import libvirtInterface
-from HostMonitor import HostMonitor
-from GuestManager import GuestManager
-from Controllers.SystemController import SystemController
-from Controllers.Rules import read_rules
+from mom.libvirtInterface import libvirtInterface
+from mom.HostMonitor import HostMonitor
+from mom.GuestManager import GuestManager
+from mom.Controllers.SystemController import SystemController
+from mom.Controllers.Rules import read_rules
 
 config = None
 def read_config(fname, options):

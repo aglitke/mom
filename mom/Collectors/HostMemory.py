@@ -1,4 +1,4 @@
-from Collector import *
+from mom.Collectors.Collector import *
 
 class HostMemory(Collector):
     """

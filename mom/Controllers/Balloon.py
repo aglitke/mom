@@ -1,5 +1,5 @@
-import libvirtInterface
 import logging
+import mom.libvirtInterface
 
 class Balloon():
     """
@@ -8,8 +8,8 @@ class Balloon():
         - balloon_target - Set guest balloon to this size (kB)
     """
     def __init__(self, properties):
-        self.logger = logging.getLogger('mom.Controllers.Balloon')
         self.libvirt_iface = properties['libvirt_iface']
+        self.logger = logging.getLogger('mom.Controllers.Balloon')
         
     def process_guest(self, entities):
         target = entities['Output'].Var('balloon_target')

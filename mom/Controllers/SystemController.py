@@ -1,7 +1,7 @@
 import threading
 import time
-import Rules
 import logging
+from mom.Controllers import Rules
 
 class SystemController(threading.Thread):
     """
@@ -35,7 +35,7 @@ class SystemController(threading.Thread):
             if name == '':
                 continue
             try:
-                module = __import__('Controllers.' + name, None, None, name)
+                module = __import__('mom.Controllers.' + name, None, None, name)
                 self.logger.debug("Loaded %s controller", name)
             except ImportError:
                 self.logger.warn("Unable to import controller: %s", name)

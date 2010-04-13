@@ -3,8 +3,8 @@ import time
 import sys
 import re
 import logging
-from libvirtInterface import libvirtInterface
-from GuestMonitor import GuestMonitor
+from mom.libvirtInterface import libvirtInterface
+from mom.GuestMonitor import GuestMonitor
 
 class GuestManager(threading.Thread):
     """

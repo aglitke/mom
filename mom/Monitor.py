@@ -1,10 +1,10 @@
 import threading
 import ConfigParser
-from collections import deque
-from Collectors import Collector
-from Entity import Entity
-from Plotter import Plotter
 import logging
+from collections import deque
+from mom.Collectors import Collector
+from mom.Entity import Entity
+from mom.Plotter import Plotter
 
 class Monitor:
     """

@@ -1,5 +1,5 @@
 from subprocess import *
-from Collector import *
+from mom.Collectors.Collector import *
 
 class HostKSM(Collector):
     """

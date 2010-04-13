@@ -1,6 +1,6 @@
 import re
-from Entity import *
 import logging
+from mom.Entity import *
 
 debug = False
 

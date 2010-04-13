@@ -1,10 +1,10 @@
-from Monitor import Monitor
-from Collectors import Collector
 import threading
 import ConfigParser
 import time
 import logging
-from Plotter import Plotter
+from mom.Monitor import Monitor
+from mom.Collectors import Collector
+from mom.Plotter import Plotter
 
 class HostMonitor(Monitor, threading.Thread):
     """

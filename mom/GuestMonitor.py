@@ -1,11 +1,11 @@
-from Monitor import Monitor
-from Collectors import Collector
 import threading
 import ConfigParser
 import time
 import re
 from subprocess import *
 import logging
+from mom.Monitor import Monitor
+from mom.Collectors import Collector
 
 
 class GuestMonitor(Monitor, threading.Thread):

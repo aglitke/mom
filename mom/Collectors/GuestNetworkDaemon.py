@@ -4,8 +4,8 @@ import signal
 import socket
 import ConfigParser
 import logger
-from Collector import *
-from HostMemory import HostMemory
+from mom.Collectors.Collector import *
+from mom.HostMemory import HostMemory
 
 def sock_send(conn, msg):
     """
