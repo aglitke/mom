@@ -1,5 +1,5 @@
 import libvirt
-from MomUtils import *
+import logging
 
 class libvirtInterface:
     """
@@ -11,6 +11,7 @@ class libvirtInterface:
     def __init__(self, uri):
         self.conn = None
         self.uri = uri
+        self.logger = logging.getLogger('mom.libvirtInterface')
         libvirt.registerErrorHandler(self._error_handler, None)
         self._connect()
 
@@ -25,7 +26,7 @@ class libvirtInterface:
         try:
             self.conn = libvirt.open(self.uri)
         except libvirt.libvirtError as e:
-            logger(LOG_ERROR, "libvirtInterface: error setting up " \
+            self.logger.error("libvirtInterface: error setting up " \
                     "connection: %s", e.message)
             
     def _reconnect(self):
@@ -36,7 +37,7 @@ class libvirtInterface:
         try:
             self._connect()
         except libvirt.libvirtError as e:
-            logger(LOG_ERROR, 'libvirtInterface: Exception while reconnecting')
+            self.logger.error('libvirtInterface: Exception while reconnecting')
 
     def listDomainsID(self):
         try:
@@ -106,7 +107,7 @@ class libvirtInterface:
         reconnect_errors = (libvirt.VIR_ERR_SYSTEM_ERROR,libvirt.VIR_ERR_INVALID_CONN)
         error = e.get_error_code()
         if error in reconnect_errors:
-            logger (LOG_WARN, 'libvirtInterface: connection lost, reconnecting.')
+            self.logger.warn('libvirtInterface: connection lost, reconnecting.')
             self._reconnect()
         else:
-            logger (LOG_WARN, 'libvirtInterface: Unhandled libvirt exception.')
+            self.logger.warn('libvirtInterface: Unhandled libvirt exception.')

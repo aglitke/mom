@@ -3,6 +3,7 @@ import sys
 import signal
 import socket
 import ConfigParser
+import logger
 from Collector import *
 from HostMemory import HostMemory
 
@@ -15,7 +16,7 @@ def sock_send(conn, msg):
     while sent < len(msg):
         ret = conn.send(msg[sent:])
         if ret == 0:
-            logger("Connection interrupted while sending")
+            #logger.warn("Connection interrupted while sending")
             return
         sent = sent + ret
 
@@ -83,6 +84,7 @@ class _Server:
     """
     def __init__(self, config):
         self.config = config
+        self.logger = logging.getLogger('mom.Collectors.GuestNetworkDaemon.Server')
         # Borrow a HostMemory Collector to get the needed data
         self.collector = HostMemory(None)
 
@@ -113,9 +115,9 @@ class _Server:
     def run(self):
         while True:
             (conn, addr) = self.socket.accept()
-            logger("Connection received from %s", addr)
+            self.logger.debug("Connection received from %s", addr)
             cmd = sock_receive(conn)
-            logger("Got command %s", cmd)
+            self.logger.debug("Got command %s", cmd)
             if cmd == "props":
                 self.send_props(conn)
             elif cmd == "stats":

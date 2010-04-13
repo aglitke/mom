@@ -1,6 +1,6 @@
 import time
 import ConfigParser
-from MomUtils import *
+import logging
 
 class Plotter:
     def __init__(self, plot_dir, name):
@@ -11,7 +11,8 @@ class Plotter:
         try:
             self.file = open(filename, 'a')
         except IOError as (errno, str):
-            logger(LOG_WARN, "Cannot open plot file %s: %s" , filename, str)
+            logger = logging.getLogger('mom.Plotter')
+            logger.warn("Cannot open plot file %s: %s" , filename, str)
         self.write_header = True
 
     def __del__(self):

@@ -1,6 +1,6 @@
 import re
 from Entity import *
-from MomUtils import *
+import logging
 
 debug = False
 
@@ -55,18 +55,19 @@ def read_rules(fname):
     Python script with a special comment header but eventually this will be
     a new grammar.
     """
+    logger = logging.getLogger('mom.Rules')
     if fname == '':
         return None
     f = open(fname, 'r')
     line = f.readline()
     matches = re.match('^#.*Mom Rules.*type=(\S+)', line)
     if matches is None:
-        logger(LOG_WARN, "%s is not a valid rules file", fname)
+        logger.warn("%s is not a valid rules file", fname)
         return None
     if matches.group(1) == 'script':
         return read_rules_script(f)
     else:
-        logger(LOG_WARN, "Unsupported rules format: %s", matches.group(1))
+        logger.warn("Unsupported rules format: %s", matches.group(1))
         return None
 
 def read_rules_script(fd):

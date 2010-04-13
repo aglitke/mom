@@ -4,7 +4,7 @@ from collections import deque
 from Collectors import Collector
 from Entity import Entity
 from Plotter import Plotter
-from MomUtils import *
+import logging
 
 class Monitor:
     """
@@ -19,6 +19,7 @@ class Monitor:
         self.properties = {}
         self.statistics = deque()
         self.collectors = []
+        self.logger = logging.getLogger('mom.Monitor')
         
         plot_dir = config.get('main', 'plot-subdir')
         if plot_dir != '':
@@ -42,11 +43,11 @@ class Monitor:
             for c in self.collectors:
                 data.update(c.collect())
         except Collector.CollectionError as e:
-            logger(LOG_DEBUG, "Collection error: %s", e.message)
+            self.logger.debug("Collection error: %s", e.message)
             self.ready = False
             return None
         except Collector.FatalError as e:
-            logger(LOG_ERROR, "Fatal Collector error: %s", e.message)
+            self.logger.error("Fatal Collector error: %s", e.message)
             self.ready = False
             self.terminate = True
             return None

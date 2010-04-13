@@ -1,4 +1,4 @@
-from MomUtils import *
+import logging
 
 class KSM():
     """
@@ -9,6 +9,7 @@ class KSM():
         - ksm_sleep_millisecs - Set the time to sleep between scans
     """
     def __init__(self, properties):
+        self.logger = logging.getLogger('mom.Controllers.KSM')
         self.cur = { 'run': '0', 'pages_to_scan': '0', 'sleep_millisecs': '0' }
         
     def write_value(self, fname, value):
@@ -16,7 +17,7 @@ class KSM():
             file = open(fname, 'w')
             file.write(str(value))
         except IOError as (errno, strerror):
-            logger(LOG_WARN, "KSM: Failed to write %s: %s", fname, strerror)
+            self.logger.warn("KSM: Failed to write %s: %s", fname, strerror)
         file.close()
 
     def process_guest(self, entities):
@@ -32,7 +33,7 @@ class KSM():
             args = []
             for (k, v) in self.cur.items():
                 args.append("%s:%s" % (k,v))
-            logger(LOG_INFO, msg, ' '.join(args))                
+            self.logger.info(msg, ' '.join(args))                
         for (key, val) in outputs.items():
             self.write_value('/sys/kernel/mm/ksm/%s' % key, val)
             self.cur[key] = val

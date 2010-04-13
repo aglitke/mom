@@ -1,7 +1,7 @@
 import threading
 import time
 import Rules
-from MomUtils import *
+import logging
 
 class SystemController(threading.Thread):
     """
@@ -14,8 +14,9 @@ class SystemController(threading.Thread):
         self.daemon = True
         self.config = config
         self.rules = rules
+        self.logger = logging.getLogger('mom.SystemController')
         if rules is None:
-            logger(LOG_WARN, '%s: No rules were found.', self.name)
+            self.logger.warn('%s: No rules were found.', self.name)
         self.properties = {
             'libvirt_iface': libvirt_iface,
             'host_monitor': host_monitor,
@@ -35,9 +36,9 @@ class SystemController(threading.Thread):
                 continue
             try:
                 module = __import__('Controllers.' + name, None, None, name)
-                logger(LOG_DEBUG, "Loaded %s controller", name)
+                self.logger.debug("Loaded %s controller", name)
             except ImportError:
-                logger(LOG_WARN, "Unable to import controller: %s", name)
+                self.logger.warn("Unable to import controller: %s", name)
                 continue
             self.controllers.append(module.instance(self.properties))
 
@@ -60,12 +61,12 @@ class SystemController(threading.Thread):
                     c.process_guest(entities)
 
     def run(self):
-        logger(LOG_INFO, "System Controller starting")
+        self.logger.info("System Controller starting")
         self.get_controllers()
         interval = self.config.getint('main', 'system-controller-interval')
         while self.config.getint('main', 'running') == 1:
             time.sleep(interval)
             self.do_controls()
-        logger(LOG_INFO, "System Controller ending")
+        self.logger.info("System Controller ending")
 
 

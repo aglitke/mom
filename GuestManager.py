@@ -2,7 +2,7 @@ import threading
 import time
 import sys
 import re
-from MomUtils import *
+import logging
 from libvirtInterface import libvirtInterface
 from GuestMonitor import GuestMonitor
 
@@ -16,6 +16,7 @@ class GuestManager(threading.Thread):
         threading.Thread.__init__(self, name='GuestManager')
         self.Daemon = True
         self.config = config
+        self.logger = logging.getLogger('mom.GuestManager')
         self.libvirt_iface = libvirt_iface
         self.guests = {}
         self.guests_sem = threading.Semaphore()
@@ -33,13 +34,13 @@ class GuestManager(threading.Thread):
         with self.guests_sem:
             for dom_id in dom_list:
                 if dom_id not in self.guests:
-                    logger(LOG_INFO, "GuestManager: Spawning Monitor for "\
+                    self.logger.info("GuestManager: Spawning Monitor for "\
                             "guest(%i)", dom_id)
                     self.guests[dom_id] = GuestMonitor(self.config, dom_id, \
                                                         self.libvirt_iface)
                 elif not self.guests[dom_id].is_alive():
-                    logger(LOG_INFO, "GuestManager: Cleaning up Monitor(%i)",\
-                            dom_id)
+                    self.logger.info("GuestManager: Cleaning up Monitor(%i)", \
+                                     dom_id)
                     self.guests[dom_id].join(2)
                     del self.guests[dom_id]
 
@@ -76,11 +77,11 @@ class GuestManager(threading.Thread):
         return ret
 
     def run(self):
-        logger(LOG_INFO, "Guest Manager starting");
+        self.logger.info("Guest Manager starting");
         interval = self.config.getint('main', 'guest-manager-interval')
         while self.config.getint('main', 'running') == 1:
             self.spawn_guest_monitors()
             self.reap_old_guests()
             time.sleep(interval)
         self.wait_for_guest_monitors()
-        logger(LOG_INFO, "Guest Manager ending")
+        self.logger.info("Guest Manager ending")

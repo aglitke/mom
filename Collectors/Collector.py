@@ -1,6 +1,6 @@
 import re
 import sys
-from MomUtils import *
+import logging
 
 class Collector:
     """
@@ -39,6 +39,7 @@ def get_collectors(config_str, properties):
     Initialize a set of new Collector instances for a Monitor.
     Return: A list of initialized Collectors
     """
+    logger = logging.getLogger('mom.Collector')
     collectors = []
     for name in config_str.split(','):
         name = name.lstrip()
@@ -48,10 +49,10 @@ def get_collectors(config_str, properties):
             module = __import__('Collectors.' + name, None, None, name)
             collectors.append(module.instance(properties))
         except ImportError:
-            logger(LOG_WARN, "Unable to import collector: %s", name)
+            logger.warn("Unable to import collector: %s", name)
             return None
         except FatalError as e:
-            logger(LOG_ERROR, "Fatal Collector error: %s", e.message)
+            logger.error("Fatal Collector error: %s", e.message)
             return None
     return collectors
 
@@ -84,7 +85,8 @@ def open_datafile(filename):
     try:
         filevar = open(filename, 'r')
     except IOError as (errno, strerror):
-        print "Cannot open %s: %s" % (filename, strerror)
+        logger = logging.getLogger('mom.Collector')
+        logger.error("Cannot open %s: %s" % (filename, strerror))
         sys.exit(1)
     return filevar
 

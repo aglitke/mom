@@ -1,5 +1,5 @@
 import libvirtInterface
-from MomUtils import *
+import logging
 
 class Balloon():
     """
@@ -8,21 +8,21 @@ class Balloon():
         - balloon_target - Set guest balloon to this size (kB)
     """
     def __init__(self, properties):
+        self.logger = logging.getLogger('mom.Controllers.Balloon')
         self.libvirt_iface = properties['libvirt_iface']
         
     def process_guest(self, entities):
-        
         target = entities['Output'].Var('balloon_target')
         if target is not None:
             target = int(target)
             id = entities['Guest'].Prop('id')
             prev_target = entities['Guest'].Stat('libvirt_curmem')
-            logger(LOG_INFO, "Ballooning guest:%s from %s to %s", \
+            self.logger.info("Ballooning guest:%s from %s to %s", \
                     id, prev_target, target)
             dom = self.libvirt_iface.getDomainFromID(id)
             if dom is not None:
                 if self.libvirt_iface.domainSetBalloonTarget(dom, target):
-                    logger(LOG_WARN, "Error while ballooning guest:%i", id)
+                    self.logger.warn("Error while ballooning guest:%i", id)
 
 def instance(properties):
     return Balloon(properties)
