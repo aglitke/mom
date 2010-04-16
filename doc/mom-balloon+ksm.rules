@@ -46,8 +46,8 @@ def change_big_enough(new_val):
 # aggressively.  When the host is not under memory pressure, slowly
 # deflate the balloons.
 
-host_free_percent = Host.StatAvg('free') / Host.total
-guest_used_mem = Guest.StatAvg('libvirt_maxmem') / Guest.StatAvg('libvirt_unused')
+host_free_percent = Host.StatAvg('mem_free') / Host.mem_available
+guest_used_mem = Guest.StatAvg('libvirt_maxmem') / Guest.StatAvg('mem_unused')
 
 if host_free_percent < pressure_threshold:
     # We are under memory pressure
@@ -138,11 +138,11 @@ def change_npages(delta):
 # machines should scan more often than small ones.  Likewise, machines under
 # memory pressure should scan more aggressively then more idle machines.
 
-ksm_pressure_threshold = Host.total * ksm_free_percent
+ksm_pressure_threshold = Host.mem_available * ksm_free_percent
 ksm_committed = Host.ksm_shareable
 
-if ksm_pressure_threshold + ksm_committed < Host.total and \
-        Host.StatAvg('free') > ksm_pressure_threshold:
+if ksm_pressure_threshold + ksm_committed < Host.mem_available and \
+        Host.StatAvg('mem_free') > ksm_pressure_threshold:
     # Disable KSM because memory isn't overcommited to qemu processes and
     # there is enough free memory.
     Output.ksm_run = 0
@@ -150,7 +150,7 @@ else:
     Output.ksm_run = 1
     Output.ksm_sleep_millisecs = ksm_sleep_ms_baseline * \
                                     16 * 1024 * 1024 / Host.total 
-    if Host.StatAvg('free') < ksm_pressure_threshold:
+    if Host.StatAvg('mem_free') < ksm_pressure_threshold:
         change_npages(ksm_pages_boost)
     else:
         change_npages(ksm_pages_decay)

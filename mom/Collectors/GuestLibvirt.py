@@ -16,17 +16,21 @@ class GuestLibvirt(Collector):
         
     The following additional statistics may be available depending on the
     libvirt version, qemu version, and guest operation system version:
-        libvirt_available - Total amount of memory available (kB)
-        libvirt_unused - Amount of free memory not including caches (kB)
-        libvirt_major_fault - Total number of major page faults
-        libvirt_minor_fault - Total number of minor page faults
-        libvirt_swap_in - Total amount of memory swapped in (kB)
-        libvirt_swap_out - Total amount of memory swapped out (kB)
+        mem_available - Total amount of memory available (kB)
+        mem_unused - Amount of free memory not including caches (kB)
+        major_fault - Total number of major page faults
+        minor_fault - Total number of minor page faults
+        swap_in - Total amount of memory swapped in (kB)
+        swap_out - Total amount of memory swapped out (kB)
     """
+    mem_stats = { 'available': 'mem_available', 'unused': 'mem_unused',
+                  'major_fault': 'major_fault', 'minor_fault': 'minor_fault',
+                  'swap_in': 'swap_in', 'swap_out': 'swap_out' }
         
     def __init__(self, properties):
         self.iface = properties['libvirt_iface']
         self.domain = self.iface.getDomainFromID(properties['id'])
+        self.logger = logging.getLogger('mom.Collectors.GuestLibvirt')
 
     def collect(self):
         info = self.iface.domainGetInfo(self.domain)
@@ -42,12 +46,12 @@ class GuestLibvirt(Collector):
         try:
             info = self.iface.domainGetMemoryStats(self.domain)
             if info is None or len(info.keys()) == 0:
-                raise CollectionError('libvirt memoryStats() is not ready')
-            for key in info.keys():
-                ret['libvirt_' + key] = info[key]
+                self.logger.debug('libvirt memoryStats() is not ready')
+                return ret
+            for (src, target) in self.mem_stats.items():
+                ret[target] = info[src]
         except AttributeError:
-            raise CollectionError('This version of libvirt does not support '\
-                                  'memory statistics.')
+            self.logger.debug('Memory stats API not available for guest')
 
         return ret
         

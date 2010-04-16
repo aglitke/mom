@@ -11,8 +11,8 @@ class HostKSM(Collector):
         ksm_pages_sharing - The number of sites where a shared page is in use
         ksm_pages_unshared - The number of pages that are scanned but not shared
         ksm_pages_to_scan - The number of pages to scan in each work interval
-        pages_volatile - The number of pages that are changing too fast to be shared
-        full_scans - The number of times all mergeable memory areas have been scanned
+        ksm_pages_volatile - The number of pages that are changing too fast to be shared
+        ksm_full_scans - The number of times all mergeable memory areas have been scanned
         ksm_shareable - Estimated amount of host memory that is eligible for sharing 
     """
     def __init__(self, properties):

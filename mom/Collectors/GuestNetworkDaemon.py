@@ -37,12 +37,13 @@ def sock_receive(conn):
 class GuestNetworkDaemon(Collector):
     """
     A guest memory stats Collector implemented over a socket connection.  Any
-    data can be passed but the following stats are implemented:\
-        total      - The total amount of available memory (kB)
-        free       - The amount of free memory including some caches (kB)
-        swap_in    - The amount of memory swapped in since the last collection (pages)
-        swap_out   - The amount of memory swapped out since the last collection (pages)
+    data can be passed but the following stats are implemented:
+        mem_available - The total amount of available memory (kB)
+        mem_unused    - The amount of free memory including some caches (kB)
+        swap_in       - The amount of memory swapped in since the last collection (pages)
+        swap_out      - The amount of memory swapped out since the last collection (pages)
     """
+    
     def __init__(self, properties):
         self.ip = properties['ip']
         self.port = 2187              # XXX: This needs to be configurable
@@ -52,7 +53,7 @@ class GuestNetworkDaemon(Collector):
 
     def collect(self):
         if self.state == 'dead':
-            return ""
+            return {}
         if self.ip is None:
             self.state = 'dead'
             raise CollectionError('No IP address for guest %s' % self.name)
@@ -68,15 +69,25 @@ class GuestNetworkDaemon(Collector):
                 self.state = 'failing'
                 raise CollectionError('Nwtwork communication to %s failed' % \
                                       self.name)
-            return ""
+            return {}
         s.close()
         self.state = 'ok'
 
-        ret = {}
+        # Parse the data string
+        result = {}
         for item in data.split(","):
             parts = item.split(":")
-            ret[parts[0]] = int(parts[1])
+            result[parts[0]] = int(parts[1])
+        
+        # Construct the return dict
+        ret = {}
+        for key in self.getFields():
+            if key in result:
+                ret[key] = result[key]
         return ret
+        
+    def getFields(self=None):
+        return [ 'mem_available', 'mem_unused', 'swap_in', 'swap_out' ]
         
 def instance(properties):
     return GuestNetworkDaemon(properties)
@@ -116,8 +127,9 @@ class _Server:
 
     def send_stats(self, conn):
         data = self.collector.collect()
-        response = "total:%i,free:%i,swap_in:%i,swap_out:%i" % \
-                (data['total'], data['free'], data['swap_in'], data['swap_out']) 
+        response = "mem_available:%i,mem_free:%i,swap_in:%i,swap_out:%i" % \
+                   (data['mem_available'], data['mem_free'], data['swap_in'], \
+                    data['swap_out'])
         sock_send(conn, response)
 
     def run(self):

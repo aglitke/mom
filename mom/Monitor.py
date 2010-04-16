@@ -45,7 +45,7 @@ class Monitor:
         data = {}
         try:
             for c in self.collectors:
-                for (key, val) in c.collect():
+                for (key, val) in c.collect().items():
                     if key not in data:
                         data[key] = val
         except Collector.CollectionError as e:

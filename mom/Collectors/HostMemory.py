@@ -4,11 +4,12 @@ class HostMemory(Collector):
     """
     This Collctor returns memory statistics about the host by examining
     /proc/meminfo and /proc/vmstat.  The fields provided are:
-        total      - The total amount of available memory (kB)
-        free       - The amount of free memory including some caches (kB)
-        swap_in    - The amount of memory swapped in since the last collection (pages)
-        swap_out   - The amount of memory swapped out since the last collection (pages)
-        anon_pages - The amount of memory used for anonymous memory areas (kB)
+        mem_available - The total amount of available memory (kB)
+        mem_unused    - The amount of memory that is not being used for any purpose (kB)
+        mem_free      - The amount of free memory including some caches (kB)
+        swap_in       - The amount of memory swapped in since the last collection (pages)
+        swap_out      - The amount of memory swapped out since the last collection (pages)
+        anon_pages    - The amount of memory used for anonymous memory areas (kB)
     """
     def __init__(self, properties):
         self.meminfo = open_datafile("/proc/meminfo")
@@ -29,11 +30,12 @@ class HostMemory(Collector):
         self.vmstat.seek(0)
         
         contents = self.meminfo.read()
-        total = parse_int("^MemTotal: (.*) kB", contents)
+        avail = parse_int("^MemTotal: (.*) kB", contents)
         anon = parse_int("^AnonPages: (.*) kB", contents)
-        free = parse_int("^MemFree: (.*) kB", contents)
+        unused = parse_int("^MemFree: (.*) kB", contents)
         buffers = parse_int("^Buffers: (.*) kB", contents)
         cached = parse_int("^Cached: (.*) kB", contents)
+        free = unused + buffers + cached
 
         # /proc/vmstat reports cumulative statistics so we must subtract the
         # previous values to get the difference since the last collection.
@@ -49,8 +51,9 @@ class HostMemory(Collector):
         swap_in = self.swap_in_cur - self.swap_in_prev
         swap_out = self.swap_out_cur - self.swap_out_prev
 
-        data = { 'total': total, 'free': free + buffers + cached, \
-                 'swap_in': swap_in, 'swap_out': swap_out, 'anon_pages': anon }
+        data = { 'mem_available': avail, 'mem_unuused': unused, \
+                 'mem_free': free, 'swap_in': swap_in, 'swap_out': swap_out, \
+                 'anon_pages': anon }
         return data
 
 def instance(properties):
