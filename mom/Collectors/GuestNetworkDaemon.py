@@ -3,9 +3,8 @@ import sys
 import signal
 import socket
 import ConfigParser
-import logger
 from mom.Collectors.Collector import *
-from mom.HostMemory import HostMemory
+from mom.Collectors.HostMemory import HostMemory
 
 def sock_send(conn, msg):
     """
@@ -45,20 +44,33 @@ class GuestNetworkDaemon(Collector):
         swap_out   - The amount of memory swapped out since the last collection (pages)
     """
     def __init__(self, properties):
-        self.ip = properties['collector_ip']
-        self.port = properties['collector_port']
+        self.ip = properties['ip']
+        self.port = 2187              # XXX: This needs to be configurable
+        self.name = properties['name']
         socket.setdefaulttimeout(1)
+        self.state = 'ok'
 
     def collect(self):
+        if self.state == 'dead':
+            return ""
+        if self.ip is None:
+            self.state = 'dead'
+            raise CollectionError('No IP address for guest %s' % self.name)
+
         data = ""
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.connect((self.ip, self.port))
             sock_send(s, "stats")
             data = sock_receive(s)     
-        except socket.error as e:
-            return {}
+        except socket.error:
+            if self.state != 'failing':
+                self.state = 'failing'
+                raise CollectionError('Nwtwork communication to %s failed' % \
+                                      self.name)
+            return ""
         s.close()
+        self.state = 'ok'
 
         ret = {}
         for item in data.split(","):
@@ -72,10 +84,6 @@ def instance(properties):
 #
 # Begin Server-side code that runs on the guest
 #
-
-def signal_quit(signum, frame):
-    print "Received signal", signum, "shutting down."
-    sys.exit(0)
 
 class _Server:
     """
@@ -123,22 +131,3 @@ class _Server:
             elif cmd == "stats":
                 self.send_stats(conn)
             conn.close()
-
-def main():
-    """
-    Executable code for running a network collector server on a guest.
-    """
-    signal.signal(signal.SIGINT, signal_quit)
-    signal.signal(signal.SIGTERM, signal_quit)
-
-    config = ConfigParser.ConfigParser()
-    config.add_section('main')
-    config.set('main', 'host', '')
-    config.set('main', 'port', '8989')  
-    config.set('main', 'min_free', '0.20')
-    config.set('main', 'max_free', '0.50')  
-    server = _Server(config)
-    server.run()
-
-if __name__ == "__main__":
-    main()

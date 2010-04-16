@@ -1,0 +1,24 @@
+#!/bin/bash
+# name-to-ip: Map a guest name to an IP address
+#
+# There is no standard method of determining the IP address of a given guest.
+# Therefore, MOM makes use of a helper program that can be customized according
+# to the host network configuration.
+#
+# This script will be called with the domain name (as returned by the
+# virDomainGetName() libvirt API).  The output should be an IPv4 IP address
+# only.  On error, return nothing.
+
+NAME=$1
+
+# Example 1: The name is the IP address
+# echo -n $NAME
+
+# Example 2: The name is a valid hostname
+# nslookup $NAME | grep '^Server' | awk '{print $2}'
+
+# Example 3: The name contains a sequence number which maps directly to a range
+# of local IP addresses
+NUM=${NAME##*-}
+IP="192.168.123.$[ $NUM + 1 ]"
+echo $IP

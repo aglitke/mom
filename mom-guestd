@@ -1,0 +1,30 @@
+#! /usr/bin/env python
+
+import socket
+import signal
+import ConfigParser
+from mom.Collectors.GuestNetworkDaemon import _Server
+from mom.Collectors.Collector import *
+
+def signal_quit(signum, frame):
+    print "Received signal", signum, "shutting down."
+    sys.exit(0)
+
+def main():
+    """
+    Executable code for running a network collector server on a guest.
+    """
+    signal.signal(signal.SIGINT, signal_quit)
+    signal.signal(signal.SIGTERM, signal_quit)
+
+    config = ConfigParser.ConfigParser()
+    config.add_section('main')
+    config.set('main', 'host', '')
+    config.set('main', 'port', '2187')  
+    config.set('main', 'min_free', '0.20')  # These two variables
+    config.set('main', 'max_free', '0.50')  #  are currently unused
+    server = _Server(config)
+    server.run()
+
+if __name__ == "__main__":
+    main()
