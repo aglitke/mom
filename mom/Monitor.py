@@ -60,10 +60,10 @@ class Monitor:
                 for (key, val) in c.collect().items():
                     if key not in data:
                         data[key] = val
-        except Collector.CollectionError as e:
+        except Collector.CollectionError, e:
             self._set_not_ready("Collection error: %s" % e.message)
             return None
-        except Collector.FatalError as e:
+        except Collector.FatalError, e:
             self._set_not_ready("Fatal Collector error: %s" % e.message)
             self.terminate = True
             return None

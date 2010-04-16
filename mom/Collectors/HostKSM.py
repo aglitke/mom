@@ -34,7 +34,7 @@ class HostKSM(Collector):
             name = '/sys/kernel/mm/ksm/%s' % datum
             try:
                 self.files[datum] = open(name, 'r')
-            except IOError as (errno, msg):
+            except IOError, (errno, msg):
                 raise FatalError("HostKSM: open %s failed: %s" % (name, msg))
 
     def get_shareable_mem(self):

@@ -25,7 +25,7 @@ class libvirtInterface:
     def _connect(self):
         try:
             self.conn = libvirt.open(self.uri)
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.logger.error("libvirtInterface: error setting up " \
                     "connection: %s", e.message)
             
@@ -36,13 +36,13 @@ class libvirtInterface:
             pass # The connection is in a strange state so ignore these
         try:
             self._connect()
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.logger.error('libvirtInterface: Exception while reconnecting')
 
     def listDomainsID(self):
         try:
             dom_list = self.conn.listDomainsID()
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
             return []
         return dom_list
@@ -50,7 +50,7 @@ class libvirtInterface:
     def getDomainFromID(self, dom_id):
         try:
             dom = self.conn.lookupByID(dom_id)
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
             return None
         else:
@@ -60,14 +60,14 @@ class libvirtInterface:
         try:
             if domain.info()[0] == libvirt.VIR_DOMAIN_RUNNING:
                 return True
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
         return False
         
     def domainGetName(self, domain):
         try:
             name = domain.name()
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
             return None
         return name
@@ -75,7 +75,7 @@ class libvirtInterface:
     def domainGetUUID(self, domain):
         try:
             uuid = domain.UUIDString()
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
             return None
         return uuid
@@ -83,7 +83,7 @@ class libvirtInterface:
     def domainGetInfo(self, domain):
         try:
             info = domain.info()
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
             return None
         return info
@@ -91,7 +91,7 @@ class libvirtInterface:
     def domainGetMemoryStats(self, domain):
         try:
             stats = domain.memoryStats()
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
             return None
         return stats
@@ -99,7 +99,7 @@ class libvirtInterface:
     def domainSetBalloonTarget(self, domain, target):
         try:
             return domain.setMemory(target)
-        except libvirt.libvirtError as e:
+        except libvirt.libvirtError, e:
             self.handleException(e)
             return False
         

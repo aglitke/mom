@@ -33,7 +33,7 @@ def evaluate_script(rules, entities):
     # Evaluate script
     try:
         exec rules['data'] in my_locals
-    except Exception as e:
+    except Exception, e:
         print "Exception %s occurred while parsing rules" % e
         return False
     return True

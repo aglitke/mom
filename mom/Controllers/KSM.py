@@ -16,7 +16,7 @@ class KSM():
         try:
             file = open(fname, 'w')
             file.write(str(value))
-        except IOError as (errno, strerror):
+        except IOError, (errno, strerror):
             self.logger.warn("KSM: Failed to write %s: %s", fname, strerror)
         file.close()
 

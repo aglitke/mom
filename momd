@@ -97,7 +97,7 @@ def get_plot_subdir(basedir):
     regex = re.compile('^momplot-(\d{3})$')
     try:
         names = os.listdir(basedir)
-    except OSError as e:
+    except OSError, e:
         logger.warn("Cannot read plot-basedir %s: %s", basedir, e.strerror)
         return ''
     seq_num = -1
@@ -115,7 +115,7 @@ def get_plot_subdir(basedir):
         return ''
     try:
         os.mkdir(dir)
-    except OSError as e:
+    except OSError, e:
         logger.warn("Cannot create plot-dir %s: %s", dir, e.strerror)
         return ''
     return dir
