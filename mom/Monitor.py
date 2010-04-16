@@ -36,12 +36,18 @@ class Monitor:
         merging the data into one dictionary and pushing it onto the deque of
         historical statistics.  Maintain a history length as specified in the
         config file.
+        
+        Note: Priority is given to collectors based on the order that they are
+        listed in the config file (ie. if two collectors produce the same
+        statistic only the value produced by the first collector will be saved).
         Return: The dictionary of collected statistics
         """
         data = {}
         try:
             for c in self.collectors:
-                data.update(c.collect())
+                for (key, val) in c.collect():
+                    if key not in data:
+                        data[key] = val
         except Collector.CollectionError as e:
             self.logger.debug("Collection error: %s", e.message)
             self.ready = False
