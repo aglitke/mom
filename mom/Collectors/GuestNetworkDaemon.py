@@ -39,7 +39,9 @@ class GuestNetworkDaemon(Collector):
     A guest memory stats Collector implemented over a socket connection.  Any
     data can be passed but the following stats are implemented:
         mem_available - The total amount of available memory (kB)
-        mem_free      - The amount of free memory including some caches (kB)
+        mem_unused    - The amount of memory that is not being used for any purpose (kB)
+        major_fault   - Total number of major page faults
+        minor_fault   - Total number of minor page faults
         swap_in       - The amount of memory swapped in since the last collection (pages)
         swap_out      - The amount of memory swapped out since the last collection (pages)
     """
@@ -87,7 +89,8 @@ class GuestNetworkDaemon(Collector):
         return ret
         
     def getFields(self=None):
-        return set(['mem_available', 'mem_free', 'swap_in', 'swap_out'])
+        return set(['mem_available', 'mem_unused', 'major_fault', 'minor_fault',
+                    'swap_in', 'swap_out'])
         
 def instance(properties):
     return GuestNetworkDaemon(properties)
@@ -106,6 +109,7 @@ class _Server:
         self.logger = logging.getLogger('mom.Collectors.GuestNetworkDaemon.Server')
         # Borrow a HostMemory Collector to get the needed data
         self.collector = HostMemory(None)
+        self.vmstat = open_datafile("/proc/vmstat")
 
         # Socket Setup
         self.listen_ip = config.get('main', 'host')
@@ -113,13 +117,14 @@ class _Server:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.listen_ip, self.listen_port))
         self.socket.listen(1)
-        
         self.min_free = config.get('main', 'min_free')
         self.max_free = config.get('main', 'max_free')
 
     def __del__(self):
         if self.socket is not None:
             self.socket.close()
+        if self.vmstat is not None:    
+            self.vmstat.close()
 
     def send_props(self, conn):
         response = "min_free:" + self.min_free + ",max_free:" + self.max_free
@@ -127,9 +132,15 @@ class _Server:
 
     def send_stats(self, conn):
         data = self.collector.collect()
-        response = "mem_available:%i,mem_free:%i,swap_in:%i,swap_out:%i" % \
+        self.vmstat.seek(0)
+        contents = self.vmstat.read()
+        minflt = parse_int("^pgfault (.*)", contents)
+        majflt = parse_int("^pgmajfault (.*)", contents)
+
+        response = "mem_available:%i,mem_unused:%i,swap_in:%i,swap_out:%i," \
+                   "major_fault:%i,minor_fault:%i" % \
                    (data['mem_available'], data['mem_free'], data['swap_in'], \
-                    data['swap_out'])
+                    data['swap_out'], majflt, minflt)
         sock_send(conn, response)
 
     def run(self):
