@@ -14,7 +14,7 @@ class GuestMonitor(Monitor, threading.Thread):
     """
     def __init__(self, config, id, libvirt_iface):
         threading.Thread.__init__(self, name="GuestMonitor-%s" % id)
-        Monitor.__init__(self, config, self.name)
+        Monitor.__init__(self, config, self.getName())
         self.daemon = True
         self.config = config
         self.logger = logging.getLogger('mom.GuestMonitor')
@@ -59,14 +59,14 @@ class GuestMonitor(Monitor, threading.Thread):
         return True
 
     def run(self):
-        self.logger.info("%s starting", self.name)
+        self.logger.info("%s starting", self.getName())
         interval = self.config.getint('main', 'guest-monitor-interval')
         while self._should_run():
             if not self.libvirt_iface.domainIsRunning(self.guest_domain):
                 break
             data = self.collect()
             time.sleep(interval)
-        self.logger.info("%s ending", self.name)
+        self.logger.info("%s ending", self.getName())
 
     def get_guest_pid(self, uuid):
         """

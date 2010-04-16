@@ -16,7 +16,7 @@ class SystemController(threading.Thread):
         self.rules = rules
         self.logger = logging.getLogger('mom.SystemController')
         if rules is None:
-            self.logger.warn('%s: No rules were found.', self.name)
+            self.logger.warn('%s: No rules were found.', self.getName())
         self.properties = {
             'libvirt_iface': libvirt_iface,
             'host_monitor': host_monitor,
