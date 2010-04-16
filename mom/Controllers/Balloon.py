@@ -1,7 +1,7 @@
 import logging
 import mom.libvirtInterface
 
-class Balloon():
+class Balloon:
     """
     Simple Balloon Controller that uses the libvirt setMemory() API to resize
     a guest's memory balloon.  Output triggers are:

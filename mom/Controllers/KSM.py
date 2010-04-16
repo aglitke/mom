@@ -1,6 +1,6 @@
 import logging
 
-class KSM():
+class KSM:
     """
     Simple controller to tune KSM paramaters.  Output triggers are:
         - ksm_run - Change the state of the KSM kernel daemon:
