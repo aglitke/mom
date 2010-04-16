@@ -31,18 +31,19 @@ class GuestManager(threading.Thread):
         dom_list = self.libvirt_iface.listDomainsID()
         if dom_list is None:
             return
-        with self.guests_sem:
-            for dom_id in dom_list:
-                if dom_id not in self.guests:
-                    self.logger.info("GuestManager: Spawning Monitor for "\
-                            "guest(%i)", dom_id)
-                    self.guests[dom_id] = GuestMonitor(self.config, dom_id, \
-                                                        self.libvirt_iface)
-                elif not self.guests[dom_id].is_alive():
-                    self.logger.info("GuestManager: Cleaning up Monitor(%i)", \
-                                     dom_id)
-                    self.guests[dom_id].join(2)
-                    del self.guests[dom_id]
+        self.guests_sem.acquire()
+        for dom_id in dom_list:
+            if dom_id not in self.guests:
+                self.logger.info("GuestManager: Spawning Monitor for "\
+                        "guest(%i)", dom_id)
+                self.guests[dom_id] = GuestMonitor(self.config, dom_id, \
+                                                   self.libvirt_iface)
+            elif not self.guests[dom_id].is_alive():
+                self.logger.info("GuestManager: Cleaning up Monitor(%i)", \
+                                 dom_id)
+                self.guests[dom_id].join(2)
+                del self.guests[dom_id]
+        self.guests_sem.release()
 
     def reap_old_guests(self):
         """
@@ -52,18 +53,20 @@ class GuestManager(threading.Thread):
         if domain_list is None:
             return
         libvirt_doms = set(self.libvirt_iface.listDomainsID())
-        with self.guests_sem:
-            for dom_id in set(self.guests) - set(domain_list):
-                del self.guests[dom_id]
+        self.guests_sem.acquire()
+        for dom_id in set(self.guests) - set(domain_list):
+            del self.guests[dom_id]
+        self.guests_sem.release()
 
     def wait_for_guest_monitors(self):
         """
         Wait for GuestMonitors to exit
         """
-        with self.guests_sem:
-            for dom_id in self.guests.keys():
-                if self.guests[dom_id].is_alive():
-                    self.guests[dom_id].join(2)
+        self.guests_sem.acquire()
+        for dom_id in self.guests.keys():
+            if self.guests[dom_id].is_alive():
+                self.guests[dom_id].join(2)
+        self.guests_sem.release()
 
     def interrogate(self):
         """
@@ -71,9 +74,10 @@ class GuestManager(threading.Thread):
         Return: A dictionary of Entities, indexed by guest id
         """
         ret = {}
-        with self.guests_sem:
-            for (id, monitor) in self.guests.items():
-                ret[id] = monitor.interrogate()
+        self.guests_sem.acquire()
+        for (id, monitor) in self.guests.items():
+            ret[id] = monitor.interrogate()
+        self.guests_sem.release()
         return ret
 
     def run(self):

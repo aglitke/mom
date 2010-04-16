@@ -50,11 +50,12 @@ class GuestMonitor(Monitor, threading.Thread):
         for var in (uuid, name, pid):
             if var is None:
                 return False
-        with self.data_sem:
-            self.properties['uuid'] = uuid
-            self.properties['pid'] = pid
-            self.properties['name'] = name
-            self.properties['ip'] = ip
+        self.data_sem.acquire()
+        self.properties['uuid'] = uuid
+        self.properties['pid'] = pid
+        self.properties['name'] = name
+        self.properties['ip'] = ip
+        self.data_sem.release()
         return True
 
     def run(self):

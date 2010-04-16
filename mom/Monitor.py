@@ -72,10 +72,11 @@ class Monitor:
                                 (self.fields - set(data)))
             return None
 
-        with self.data_sem:
-            self.statistics.append(data)
-            if len(self.statistics) > self.config.getint('main', 'sample-history-length'):
-                self.statistics.popleft()
+        self.data_sem.acquire()
+        self.statistics.append(data)
+        if len(self.statistics) > self.config.getint('main', 'sample-history-length'):
+            self.statistics.popleft()
+        self.data_sem.release()
         self._set_ready()
         
         if self.plotter is not None:
@@ -92,10 +93,11 @@ class Monitor:
         if self.ready is not True:
             return None
         ret = Entity()
-        with self.data_sem:
-            for prop in self.properties.keys():
-                ret._set_property(prop, self.properties[prop])
-            ret._set_statistics(self.statistics)
+        self.data_sem.acquire()
+        for prop in self.properties.keys():
+            ret._set_property(prop, self.properties[prop])
+        ret._set_statistics(self.statistics)
+        self.data_sem.release()
         ret._finalize()
         return ret
         
