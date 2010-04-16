@@ -15,10 +15,12 @@ class HostKSM(Collector):
         ksm_full_scans - The number of times all mergeable memory areas have been scanned
         ksm_shareable - Estimated amount of host memory that is eligible for sharing 
     """
+    
+    sysfs_keys = [ 'full_scans', 'pages_sharing', 'pages_unshared', 'run',
+                   'pages_shared', 'pages_to_scan', 'pages_volatile',
+                   'sleep_millisecs' ]
+    
     def __init__(self, properties):
-        self.sysfs_keys = [ 'full_scans', 'pages_sharing', 'pages_unshared',
-                            'run', 'pages_shared', 'pages_to_scan',
-                            'pages_volatile',  'sleep_millisecs' ]
         self.open_files()
 
     def __del__(self):
@@ -58,6 +60,10 @@ class HostKSM(Collector):
             data['ksm_' + datum] = parse_int('(.*)', file.read())
         data['ksm_shareable'] = self.get_shareable_mem()
         return data
+        
+    def getFields(self=None):
+        f = lambda x: 'ksm_' + x
+        return set(map(f, HostKSM.sysfs_keys.items)) | set('ksm_shareable')
 
 def instance(properties):
     return HostKSM(properties)

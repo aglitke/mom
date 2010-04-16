@@ -13,21 +13,22 @@ class Plotter:
         except IOError as (errno, str):
             logger = logging.getLogger('mom.Plotter')
             logger.warn("Cannot open plot file %s: %s" , filename, str)
-        self.write_header = True
 
     def __del__(self):
         if self.file is not None:
             self.file.close()
-
+            
+    def setFields(self, fields):
+        if self.file is None:
+            return
+        self.keys = list(fields)
+        self.keys.sort()
+        header = '# time\t ' + '\t '.join(map(str, self.keys)) + '\n'
+        self.file.write(header)
+        
     def plot(self, data):
         if self.file is None:
             return
-        if self.write_header:
-            self.write_header = False
-            self.keys = data.keys()
-            self.keys.sort()
-            header = '# time\t ' + '\t'.join(map(str, self.keys)) + '\n'
-            self.file.write(header)
         time_val = str(time.time())
         f = lambda x: str(data[x])
         try:

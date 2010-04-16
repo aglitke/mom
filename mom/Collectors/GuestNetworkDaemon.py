@@ -39,7 +39,7 @@ class GuestNetworkDaemon(Collector):
     A guest memory stats Collector implemented over a socket connection.  Any
     data can be passed but the following stats are implemented:
         mem_available - The total amount of available memory (kB)
-        mem_unused    - The amount of free memory including some caches (kB)
+        mem_free      - The amount of free memory including some caches (kB)
         swap_in       - The amount of memory swapped in since the last collection (pages)
         swap_out      - The amount of memory swapped out since the last collection (pages)
     """
@@ -87,7 +87,7 @@ class GuestNetworkDaemon(Collector):
         return ret
         
     def getFields(self=None):
-        return [ 'mem_available', 'mem_unused', 'swap_in', 'swap_out' ]
+        return set(['mem_available', 'mem_free', 'swap_in', 'swap_out'])
         
 def instance(properties):
     return GuestNetworkDaemon(properties)

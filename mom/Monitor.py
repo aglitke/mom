@@ -18,6 +18,8 @@ class Monitor:
         self.data_sem = threading.Semaphore()
         self.properties = {}
         self.statistics = deque()
+        self.name = name
+        self.fields = None
         self.collectors = []
         self.logger = logging.getLogger('mom.Monitor')
         
@@ -27,7 +29,7 @@ class Monitor:
         else:
             self.plotter = None
         
-        self.ready = False
+        self.ready = None 
         self.terminate = False
         
     def collect(self):
@@ -42,6 +44,16 @@ class Monitor:
         statistic only the value produced by the first collector will be saved).
         Return: The dictionary of collected statistics
         """
+        
+        # The first time we are called, populate the list of expected fields
+        if self.fields is None:
+            self.fields = set()
+            for c in self.collectors:
+                self.fields |= c.getFields()
+            self.logger.debug("Using fields: %s", repr(self.fields))
+            if self.plotter is not None:
+                self.plotter.setFields(self.fields)
+        
         data = {}
         try:
             for c in self.collectors:
@@ -49,20 +61,22 @@ class Monitor:
                     if key not in data:
                         data[key] = val
         except Collector.CollectionError as e:
-            self.logger.debug("Collection error: %s", e.message)
-            self.ready = False
+            self._set_not_ready("Collection error: %s" % e.message)
             return None
         except Collector.FatalError as e:
-            self.logger.error("Fatal Collector error: %s", e.message)
-            self.ready = False
+            self._set_not_ready("Fatal Collector error: %s" % e.message)
             self.terminate = True
+            return None
+        if set(data) != self.fields:
+            self._set_not_ready("Incomplete data: missing %s" % \
+                                (self.fields - set(data)))
             return None
 
         with self.data_sem:
             self.statistics.append(data)
             if len(self.statistics) > self.config.getint('main', 'sample-history-length'):
                 self.statistics.popleft()
-        self.ready = True
+        self._set_ready()
         
         if self.plotter is not None:
             self.plotter.plot(data)
@@ -75,7 +89,7 @@ class Monitor:
         is useful for rules processing.
         Return: A new Entity object
         """
-        if self.ready is False:
+        if self.ready is not True:
             return None
         ret = Entity()
         with self.data_sem:
@@ -85,6 +99,16 @@ class Monitor:
         ret._finalize()
         return ret
         
+    def _set_ready(self):
+        if self.ready is not True:
+            self.logger.info('%s is ready', self.name)
+        self.ready = True
+
+    def _set_not_ready(self, message=None):
+        if self.ready is not False and message is not None:
+            self.logger.warn('%s: %s', self.name, message)
+        self.ready = False
+
     def _should_run(self):
         """
         Private helper to determine if the Monitor should continue to run.

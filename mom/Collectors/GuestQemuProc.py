@@ -42,6 +42,9 @@ class GuestQemuProc(Collector):
         self.prev_major_faults = cur_major_faults
 
         return { 'host_minor_faults': minor_faults, 'host_major_faults': major_faults }
+        
+    def getFields(self=None):
+        return set(['host_minor_faults', 'host_major_faults'])
 
 def instance(properties):
     return GuestQemuProc(properties)

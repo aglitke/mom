@@ -25,6 +25,14 @@ class Collector:
         """
         return {}
         
+    def getFields(self=None):
+        """
+        Used to query the names of statistics that this Collector will return
+        Override this method when creating new collectors.
+        Return: A set containing the names of all statistics returned by collect()
+        """
+        return set()
+        
     def instance(properties):
         """
         Override this method when creating new collectors.

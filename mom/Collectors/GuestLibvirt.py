@@ -26,6 +26,10 @@ class GuestLibvirt(Collector):
     mem_stats = { 'available': 'mem_available', 'unused': 'mem_unused',
                   'major_fault': 'major_fault', 'minor_fault': 'minor_fault',
                   'swap_in': 'swap_in', 'swap_out': 'swap_out' }
+    libvirt_stats = [ 'libvirt_state', 'libvirt_maxmem', 'libvirt_curmem' ]
+    
+    def getFields(self=None):
+        return set(GuestLibvirt.mem_stats.values() + GuestLibvirt.libvirt_stats)
         
     def __init__(self, properties):
         self.iface = properties['libvirt_iface']
