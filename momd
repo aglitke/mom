@@ -131,7 +131,7 @@ def threads_ok(threads):
     Check to make sure a list of expected threads are still alive
     """
     for t in threads:
-        if not t.is_alive():
+        if not t.isAlive():
             return False
     return True
     
@@ -139,7 +139,7 @@ def wait_for_thread(t, timeout):
     """
     Join a thread only if it is still running
     """
-    if t.is_alive():
+    if t.isAlive():
         t.join(timeout)
 
 def main():

@@ -38,7 +38,7 @@ class GuestManager(threading.Thread):
                         "guest(%i)", dom_id)
                 self.guests[dom_id] = GuestMonitor(self.config, dom_id, \
                                                    self.libvirt_iface)
-            elif not self.guests[dom_id].is_alive():
+            elif not self.guests[dom_id].isAlive():
                 self.logger.info("GuestManager: Cleaning up Monitor(%i)", \
                                  dom_id)
                 self.guests[dom_id].join(2)
@@ -64,7 +64,7 @@ class GuestManager(threading.Thread):
         """
         self.guests_sem.acquire()
         for dom_id in self.guests.keys():
-            if self.guests[dom_id].is_alive():
+            if self.guests[dom_id].isAlive():
                 self.guests[dom_id].join(2)
         self.guests_sem.release()
 
