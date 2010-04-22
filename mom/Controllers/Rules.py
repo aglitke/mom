@@ -36,6 +36,11 @@ def evaluate_script(rules, entities):
     except Exception, e:
         print "Exception %s occurred while parsing rules" % e
         return False
+
+    # Store any variables back to the persistent entities
+    for entity in entities.values():
+        entity._store_variables()
+
     return True
     
 def evaluate(rules, entities):

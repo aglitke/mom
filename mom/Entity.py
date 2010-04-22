@@ -9,16 +9,28 @@ class Entity:
     contain a snapshot of Monitor data that can be used as inputs to rules.  The
     rule-accessible methods provide a simple syntax for referencing data.
     """
-    def __init__(self):
+    def __init__(self, monitor=None):
         self.properties = {}
+        self.variables = {}
         self.statistics = []
+        self.monitor = monitor
 
     def _set_property(self, name, val):
         self.properties[name] = val
 
+    def _set_variable(self, name, val):
+        self.variables[name] = val
+
     def _set_statistics(self, stats):
         for row in stats:
             self.statistics.append(row)
+
+    def _store_variables(self):
+        """
+        Pass rule-defined variables back to the Monitor for storage
+        """
+        if self.monitor is not None:
+            self.monitor.update_variables(self.variables)
             
     def _finalize(self):
         """
@@ -77,12 +89,18 @@ class Entity:
             total = total + row[name]
         return float(total / len(self.statistics))
 
-    def Var(self, name):
+    def PutVar(self, name, val):
+        """
+        Store a named value in this Entity.
+        """
+        self.variables[name] = val
+
+    def GetVar(self, name):
         """
         Get the value of a potential variable in this instance.
         Returns None if the variable has not been defined.
         """
-        try:
-            return getattr(self, name)
-        except AttributeError:
+        if name in self.variables:
+            return self.variables[name]
+        else:
             return None

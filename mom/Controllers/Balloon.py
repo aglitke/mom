@@ -12,7 +12,7 @@ class Balloon:
         self.logger = logging.getLogger('mom.Controllers.Balloon')
         
     def process_guest(self, entities):
-        target = entities['Output'].Var('balloon_target')
+        target = entities['Output'].GetVar('balloon_target')
         if target is not None:
             target = int(target)
             id = entities['Guest'].Prop('id')

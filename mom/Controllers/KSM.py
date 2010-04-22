@@ -23,7 +23,7 @@ class KSM:
     def process_guest(self, entities):
         outputs = {}
         for key in self.cur.keys():
-            rule_var =  entities['Output'].Var('ksm_' + key)
+            rule_var =  entities['Output'].GetVar('ksm_' + key)
             if rule_var is not None and rule_var != self.cur[key]:
                 outputs[key] = rule_var
                 self.cur[key] = rule_var

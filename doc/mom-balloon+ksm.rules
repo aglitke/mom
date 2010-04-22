@@ -74,7 +74,7 @@ if host_free_percent < pressure_threshold:
     # value makes sense and is a large enough change to be worth it.   
     if balloon_size >= Guest.libvirt_maxmem or \
             change_big_enough(balloon_size):
-        Output.balloon_target = balloon_size
+        Output.SetVar('balloon_target', balloon_size)
 else:
     # We are not under memory pressure
     # There is only work to do if the guest is ballooned
@@ -94,7 +94,7 @@ else:
         if balloon_size < balloon_min:
             balloon_size = balloon_min
         if change_big_enough(balloon_size):
-            Output.balloon_target = balloon_size
+            Output.SetVar('balloon_target', balloon_size)
 
 ### KSM ########################################################################
 
@@ -129,7 +129,7 @@ def change_npages(delta):
         newval = ksm_npages_max
     elif newval < ksm_npages_min:
         newval = ksm_npages_min
-    Output.ksm_pages_to_scan = newval
+    Output.SetVar('ksm_pages_to_scan', newval)
 
 ### Main Script
 # Methodology: Since running KSM does incur some overhead, try to run it only 
@@ -145,11 +145,11 @@ if ksm_pressure_threshold + ksm_committed < Host.mem_available and \
         Host.StatAvg('mem_free') > ksm_pressure_threshold:
     # Disable KSM because memory isn't overcommited to qemu processes and
     # there is enough free memory.
-    Output.ksm_run = 0
+    Output.SetVar('ksm_run', 0)
 else:
-    Output.ksm_run = 1
-    Output.ksm_sleep_millisecs = ksm_sleep_ms_baseline * \
-                                    16 * 1024 * 1024 / Host.total 
+    Output.SetVar('ksm_run', 1)
+    Output.SetVar('ksm_sleep_millisecs', ksm_sleep_ms_baseline * \
+                                         16 * 1024 * 1024 / Host.total)
     if Host.StatAvg('mem_free') < ksm_pressure_threshold:
         change_npages(ksm_pages_boost)
     else:

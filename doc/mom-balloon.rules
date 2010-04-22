@@ -74,7 +74,7 @@ if host_free_percent < pressure_threshold:
     # value makes sense and is a large enough change to be worth it.   
     if balloon_size >= Guest.libvirt_maxmem or \
             change_big_enough(balloon_size):
-        Output.balloon_target = balloon_size
+        Output.SetVar('balloon_target', balloon_size)
 else:
     # We are not under memory pressure
     # There is only work to do if the guest is ballooned
@@ -94,4 +94,4 @@ else:
         if balloon_size < balloon_min:
             balloon_size = balloon_min
         if change_big_enough(balloon_size):
-            Output.balloon_target = balloon_size
+            Output.SetVar('balloon_target', balloon_size)

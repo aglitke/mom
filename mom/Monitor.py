@@ -18,6 +18,7 @@ class Monitor:
         self.data_sem = threading.Semaphore()
         self.properties = {}
         self.statistics = deque()
+        self.variables = {}
         self.name = name
         self.fields = None
         self.collectors = []
@@ -92,14 +93,25 @@ class Monitor:
         """
         if self.ready is not True:
             return None
-        ret = Entity()
+        ret = Entity(monitor=self)
         self.data_sem.acquire()
         for prop in self.properties.keys():
             ret._set_property(prop, self.properties[prop])
+        for var in self.variables.keys():
+            ret._set_variable(var, self.variables[var])
         ret._set_statistics(self.statistics)
         self.data_sem.release()
         ret._finalize()
         return ret
+
+    def update_variables(self, variables):
+        """
+        Update the variables array to store any updates from an Entity
+        """
+        self.data_sem.acquire()
+        for (var, val) in variables.items():
+            self.variables[var] = val
+        self.data_sem.release()
         
     def _set_ready(self):
         if self.ready is not True:
