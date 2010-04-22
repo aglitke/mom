@@ -19,7 +19,9 @@ class libvirtInterface:
         if self.conn is not None:
             self.conn.close()
 
-    def _error_handler(ctx, error):
+    # Older versions of the libvirt python bindings required an extra parameter.
+    # Hence 'dummy'.
+    def _error_handler(self, ctx, error, dummy=None):
         pass
 
     def _connect(self):
@@ -105,9 +107,13 @@ class libvirtInterface:
         
     def handleException(self, e):
         reconnect_errors = (libvirt.VIR_ERR_SYSTEM_ERROR,libvirt.VIR_ERR_INVALID_CONN)
+        do_nothing_errors = (libvirt.VIR_ERR_NO_DOMAIN,)
         error = e.get_error_code()
         if error in reconnect_errors:
             self.logger.warn('libvirtInterface: connection lost, reconnecting.')
             self._reconnect()
+        elif error in do_nothing_errors:
+            pass
         else:
-            self.logger.warn('libvirtInterface: Unhandled libvirt exception.')
+            self.logger.warn('libvirtInterface: Unhandled libvirt exception '\
+                             '(%i).', error)
