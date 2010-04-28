@@ -89,7 +89,7 @@ class Entity:
             total = total + row[name]
         return float(total / len(self.statistics))
 
-    def PutVar(self, name, val):
+    def SetVar(self, name, val):
         """
         Store a named value in this Entity.
         """
