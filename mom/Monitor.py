@@ -62,10 +62,10 @@ class Monitor:
                     if key not in data:
                         data[key] = val
         except Collector.CollectionError, e:
-            self._set_not_ready("Collection error: %s" % e.message)
+            self._set_not_ready("Collection error: %s" % e.msg)
             return None
         except Collector.FatalError, e:
-            self._set_not_ready("Fatal Collector error: %s" % e.message)
+            self._set_not_ready("Fatal Collector error: %s" % e.msg)
             self.terminate = True
             return None
         if set(data) != self.fields:

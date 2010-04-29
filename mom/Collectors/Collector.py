@@ -60,7 +60,7 @@ def get_collectors(config_str, properties):
             logger.warn("Unable to import collector: %s", name)
             return None
         except FatalError, e:
-            logger.error("Fatal Collector error: %s", e.message)
+            logger.error("Fatal Collector error: %s", e.msg)
             return None
     return collectors
 
@@ -73,7 +73,7 @@ class CollectionError(Exception):
     collect() operation and it cannot return a complete, coherent data set.
     """
     def __init__(self, msg):
-        self.message = msg
+        self.msg = msg
 
 class FatalError(Exception):
     """
@@ -81,7 +81,7 @@ class FatalError(Exception):
     will prevent it from initializing or collecting any data.
     """
     def __init__(self, msg):
-        self.message = msg
+        self.msg = msg
 
 #
 # Collector utility functions
