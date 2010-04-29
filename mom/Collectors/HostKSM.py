@@ -63,7 +63,7 @@ class HostKSM(Collector):
         
     def getFields(self=None):
         f = lambda x: 'ksm_' + x
-        return set(map(f, HostKSM.sysfs_keys.items)) | set('ksm_shareable')
+        return set(map(f, HostKSM.sysfs_keys)) | set(['ksm_shareable'])
 
 def instance(properties):
     return HostKSM(properties)
