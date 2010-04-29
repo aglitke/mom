@@ -13,19 +13,25 @@ class GuestMonitor(Monitor, threading.Thread):
     A GuestMonitor thread collects and reports statistics about 1 running guest
     """
     def __init__(self, config, id, libvirt_iface):
-        threading.Thread.__init__(self, name="GuestMonitor-%s" % id)
-        Monitor.__init__(self, config, self.getName())
-        self.daemon = True
         self.config = config
         self.logger = logging.getLogger('mom.GuestMonitor')
         self.libvirt_iface = libvirt_iface
+        self.guest_domain = self.libvirt_iface.getDomainFromID(id)
+        info = self.get_guest_info()
+        if info is None:
+            self.logger.error("Failed to get guest:%s information -- monitor "\
+                    "can't start", id)
+            return
+
+        threading.Thread.__init__(self, name="GuestMonitor-%s" % info['name'])
+        Monitor.__init__(self, config, self.getName())
+        self.daemon = True
+        
+        self.data_sem.acquire()
+        self.properties.update(info)
         self.properties['id'] = id
         self.properties['libvirt_iface'] = libvirt_iface
-
-        if not self.get_guest_info():
-            self.logger.error("Failed to get guest:%s information -- monitor "\
-                    "can't start", self.properties['id'])
-            return
+        self.data_sem.release()
         collector_list = self.config.get('guest', 'collectors')
         self.collectors = Collector.get_collectors(collector_list,
                             self.properties)
@@ -36,27 +42,19 @@ class GuestMonitor(Monitor, threading.Thread):
                             
     def get_guest_info(self):
         """
-        Set up some basic guest properties
-        Returns: True on success, False otherwise
+        Collect some basic properties about this guest
+        Returns: A dict of properties on success, None otherwise
         """
-        id = self.properties['id']
-        self.guest_domain = self.libvirt_iface.getDomainFromID(id)
         if self.guest_domain is None:
-            return False
-        uuid = self.libvirt_iface.domainGetUUID(self.guest_domain)
-        name = self.libvirt_iface.domainGetName(self.guest_domain)
-        pid = self.get_guest_pid(uuid)
-        ip = self.get_guest_ip(name)
-        for var in (uuid, name, pid):
-            if var is None:
-                return False
-        self.data_sem.acquire()
-        self.properties['uuid'] = uuid
-        self.properties['pid'] = pid
-        self.properties['name'] = name
-        self.properties['ip'] = ip
-        self.data_sem.release()
-        return True
+            return None
+        data = {}
+        data['uuid'] = self.libvirt_iface.domainGetUUID(self.guest_domain)
+        data['name'] = self.libvirt_iface.domainGetName(self.guest_domain)
+        data['pid'] = self.get_guest_pid(data['uuid'])
+        data['ip'] = self.get_guest_ip(data['name'])
+        if None in data.values():
+                return None
+        return data
 
     def run(self):
         self.logger.info("%s starting", self.getName())
