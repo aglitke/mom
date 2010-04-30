@@ -1,9 +1,6 @@
 # Mom Rules type=script
-#
-# Autoballooning Rules:
-#
 
-#require( ('Host', 'Guest', 'Balloon') )
+### Auto-Balloon ###############################################################
 
 ### Constants
 # If the percentage of host free memory drops below this value
