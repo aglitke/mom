@@ -12,8 +12,8 @@ setup(name='MOM',
       keywords=['Requires: libvirt'],
       data_files=[('/usr/sbin', ['momd']),
                   ('/usr/share/doc/mom/examples',
-                   ['doc/mom-balloon.conf', 'doc/mom-balloon.rules',
-                    'doc/mom-balloon+ksm.conf', 'doc/mom-balloon+ksm.rules']
+                   ['doc/mom-balloon.conf', 'doc/balloon.rules',
+                    'doc/mom-balloon+ksm.conf', 'doc/ksm.rules']
                   )],
      )
 
