@@ -1,9 +1,10 @@
 import threading
 import time
 import logging
+from mom.MomThread import MomThread
 from mom.Controllers import Rules
 
-class SystemController(threading.Thread):
+class SystemController(threading.Thread, MomThread):
     """
     At a regular interval, this thread triggers system reconfiguration by
     sampling host and guest data, evaluating the rule set and reporting the
@@ -11,6 +12,7 @@ class SystemController(threading.Thread):
     """
     def __init__(self, config, rules, libvirt_iface, host_monitor, guest_manager):
         threading.Thread.__init__(self, name="SystemController")
+        MomThread.__init__(self)
         self.daemon = True
         self.config = config
         self.rules = rules
@@ -67,6 +69,7 @@ class SystemController(threading.Thread):
         while self.config.getint('main', 'running') == 1:
             time.sleep(interval)
             self.do_controls()
+            self.interval_complete()
         self.logger.info("System Controller ending")
 
 

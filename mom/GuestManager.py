@@ -3,10 +3,11 @@ import time
 import sys
 import re
 import logging
+from mom.MomThread import MomThread
 from mom.libvirtInterface import libvirtInterface
 from mom.GuestMonitor import GuestMonitor
 
-class GuestManager(threading.Thread):
+class GuestManager(threading.Thread, MomThread):
     """
     The GuestManager thread maintains a list of currently active guests on the
     system.  When a new guest is discovered, a new GuestMonitor is spawned.
@@ -14,6 +15,7 @@ class GuestManager(threading.Thread):
     """
     def __init__(self, config, libvirt_iface):
         threading.Thread.__init__(self, name='GuestManager')
+        MomThread.__init__(self)
         self.Daemon = True
         self.config = config
         self.logger = logging.getLogger('mom.GuestManager')
@@ -80,12 +82,31 @@ class GuestManager(threading.Thread):
         self.guests_sem.release()
         return ret
 
+    def check_threads(self):
+        """
+        Check to make sure our GuestMonitors are responding.  Any threads that
+        have stalled or are not responding will trigger log messages.
+        """
+        status = True
+        now = time.time()
+        interval = self.config.getint('main', 'guest-monitor-interval')
+        self.guests_sem.acquire()
+        for thread in self.guests.values():
+            if not thread.check_thread(now, interval):
+                status = False
+        self.guests_sem.release()
+        return status
+
     def run(self):
         self.logger.info("Guest Manager starting");
         interval = self.config.getint('main', 'guest-manager-interval')
         while self.config.getint('main', 'running') == 1:
             self.spawn_guest_monitors()
             self.reap_old_guests()
+            self.interval_complete()
+            if not self.check_threads():
+                self.logger.error("GuestMonitor threads have failed -- terminating")
+                break
             time.sleep(interval)
         self.wait_for_guest_monitors()
         self.logger.info("Guest Manager ending")

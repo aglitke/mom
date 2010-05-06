@@ -22,7 +22,8 @@ class Monitor:
         self.name = name
         self.fields = None
         self.collectors = []
-        self.logger = logging.getLogger('mom.Monitor')
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger('mom.Monitor')
         
         plot_dir = config.get('main', 'plot-subdir')
         if plot_dir != '':

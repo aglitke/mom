@@ -4,11 +4,12 @@ import time
 import re
 from subprocess import *
 import logging
+from mom.MomThread import MomThread
 from mom.Monitor import Monitor
 from mom.Collectors import Collector
 
 
-class GuestMonitor(Monitor, threading.Thread):
+class GuestMonitor(Monitor, threading.Thread, MomThread):
     """
     A GuestMonitor thread collects and reports statistics about 1 running guest
     """
@@ -25,6 +26,7 @@ class GuestMonitor(Monitor, threading.Thread):
 
         threading.Thread.__init__(self, name="GuestMonitor-%s" % info['name'])
         Monitor.__init__(self, config, self.getName())
+        MomThread.__init__(self)
         self.daemon = True
         
         self.data_sem.acquire()
@@ -63,6 +65,7 @@ class GuestMonitor(Monitor, threading.Thread):
             if not self.libvirt_iface.domainIsRunning(self.guest_domain):
                 break
             data = self.collect()
+            self.interval_complete()
             time.sleep(interval)
         self.logger.info("%s ending", self.getName())
 
