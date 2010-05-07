@@ -14,6 +14,7 @@ class GuestMonitor(Monitor, threading.Thread, MomThread):
     A GuestMonitor thread collects and reports statistics about 1 running guest
     """
     def __init__(self, config, id, libvirt_iface):
+        threading.Thread.__init__(self, name="guest:%s" % id)
         self.config = config
         self.logger = logging.getLogger('mom.GuestMonitor')
         self.libvirt_iface = libvirt_iface
@@ -24,7 +25,7 @@ class GuestMonitor(Monitor, threading.Thread, MomThread):
                     "can't start", id)
             return
 
-        threading.Thread.__init__(self, name="GuestMonitor-%s" % info['name'])
+        self.setName("GuestMonitor-%s" % info['name'])
         Monitor.__init__(self, config, self.getName())
         MomThread.__init__(self)
         self.daemon = True

@@ -29,23 +29,29 @@ class GuestManager(threading.Thread, MomThread):
         Get the list of running domains and spawn GuestMonitors for any guests
         we are not already tracking.  Remove any GuestMonitors that are no
         longer running.
+        Returns: True if successful, False otherwise
         """
         dom_list = self.libvirt_iface.listDomainsID()
         if dom_list is None:
-            return
+            return True
         self.guests_sem.acquire()
         for dom_id in dom_list:
             if dom_id not in self.guests:
                 self.logger.info("GuestManager: Spawning Monitor for "\
                         "guest(%i)", dom_id)
-                self.guests[dom_id] = GuestMonitor(self.config, dom_id, \
-                                                   self.libvirt_iface)
+                guest = GuestMonitor(self.config, dom_id, self.libvirt_iface)
+                if guest.isAlive():
+                    self.guests[dom_id] = guest
+                else:
+                    self.guests_sem.release()
+                    return False
             elif not self.guests[dom_id].isAlive():
                 self.logger.info("GuestManager: Cleaning up Monitor(%i)", \
                                  dom_id)
                 self.guests[dom_id].join(2)
                 del self.guests[dom_id]
         self.guests_sem.release()
+        return True
 
     def reap_old_guests(self):
         """
@@ -101,7 +107,10 @@ class GuestManager(threading.Thread, MomThread):
         self.logger.info("Guest Manager starting");
         interval = self.config.getint('main', 'guest-manager-interval')
         while self.config.getint('main', 'running') == 1:
-            self.spawn_guest_monitors()
+            if not self.spawn_guest_monitors():
+                self.logger.error("A problem occurred while spawning " \
+                                  "GuestMonitors -- terminating")
+                break
             self.reap_old_guests()
             self.interval_complete()
             if not self.check_threads():
