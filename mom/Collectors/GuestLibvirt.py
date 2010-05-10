@@ -35,6 +35,16 @@ class GuestLibvirt(Collector):
         self.iface = properties['libvirt_iface']
         self.domain = self.iface.getDomainFromID(properties['id'])
         self.logger = logging.getLogger('mom.Collectors.GuestLibvirt')
+        self.memstats_available = True
+
+    def stats_error(self, msg):
+        """
+        Only print stats interface errors one time when we first discover a
+        problem.  Otherwise the log will be overrun with noise.
+        """
+        if self.memstats_available:
+            self.logger.debug(msg)
+        self.memstats_available = False
 
     def collect(self):
         info = self.iface.domainGetInfo(self.domain)
@@ -50,12 +60,13 @@ class GuestLibvirt(Collector):
         try:
             info = self.iface.domainGetMemoryStats(self.domain)
             if info is None or len(info.keys()) == 0:
-                self.logger.debug('libvirt memoryStats() is not ready')
+                self.stats_error('libvirt memoryStats() is not ready')
                 return ret
             for (src, target) in self.mem_stats.items():
                 ret[target] = info[src]
+            self.memstats_available = True
         except AttributeError:
-            self.logger.debug('Memory stats API not available for guest')
+            self.stats_error('Memory stats API not available for guest')
 
         return ret
         
