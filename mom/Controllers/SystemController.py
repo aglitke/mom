@@ -11,7 +11,7 @@ class SystemController(threading.Thread):
     """
     def __init__(self, config, rules, libvirt_iface, host_monitor, guest_manager):
         threading.Thread.__init__(self, name="SystemController")
-        self.daemon = True
+        self.setDaemon(True)
         self.config = config
         self.rules = rules
         self.logger = logging.getLogger('mom.SystemController')

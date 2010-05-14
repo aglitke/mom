@@ -13,7 +13,7 @@ class HostMonitor(Monitor, threading.Thread):
     def __init__(self, config):
         threading.Thread.__init__(self, name="HostMonitor")
         Monitor.__init__(self, config, self.getName())
-        self.daemon = True
+        self.setDaemon(True)
         self.config = config
         self.logger = logging.getLogger('mom.HostMonitor')
         collector_list = self.config.get('host', 'collectors')

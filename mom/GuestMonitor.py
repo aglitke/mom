@@ -26,7 +26,7 @@ class GuestMonitor(Monitor, threading.Thread):
 
         self.setName("GuestMonitor-%s" % info['name'])
         Monitor.__init__(self, config, self.getName())
-        self.daemon = True
+        self.setDaemon(True)
         
         self.data_sem.acquire()
         self.properties.update(info)

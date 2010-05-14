@@ -14,7 +14,7 @@ class GuestManager(threading.Thread):
     """
     def __init__(self, config, libvirt_iface):
         threading.Thread.__init__(self, name='GuestManager')
-        self.Daemon = True
+        self.setDaemon(True)
         self.config = config
         self.logger = logging.getLogger('mom.GuestManager')
         self.libvirt_iface = libvirt_iface
