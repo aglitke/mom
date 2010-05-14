@@ -25,53 +25,55 @@ class GuestManager(threading.Thread):
     def spawn_guest_monitors(self):
         """
         Get the list of running domains and spawn GuestMonitors for any guests
-        we are not already tracking.  Remove any GuestMonitors that are no
-        longer running.
-        Returns: True if successful, False otherwise
+        we are not already tracking.  The GuestMonitor constructor might block
+        so don't hold guests_sem while calling it.
         """
-        dom_list = self.libvirt_iface.listDomainsID()
-        if dom_list is None:
-            return True
-        self.guests_sem.acquire()
-        for dom_id in dom_list:
-            if dom_id not in self.guests:
-                self.logger.info("GuestManager: Spawning Monitor for "\
-                        "guest(%i)", dom_id)
-                guest = GuestMonitor(self.config, dom_id, self.libvirt_iface)
-                if guest.isAlive():
-                    self.guests[dom_id] = guest
-                else:
-                    self.guests_sem.release()
-                    return False
-            elif not self.guests[dom_id].isAlive():
-                self.logger.info("GuestManager: Cleaning up Monitor(%i)", \
-                                 dom_id)
-                self.guests[dom_id].join(2)
-                del self.guests[dom_id]
-        self.guests_sem.release()
-        return True
-
-    def reap_old_guests(self):
-        """
-        Remove any GuestMonitors that no longer correspond to a running guest
-        """
-        domain_list = self.libvirt_iface.listDomainsID()
-        if domain_list is None:
+        libvirt_list = self.libvirt_iface.listDomainsID()
+        if libvirt_list is None:
             return
-        libvirt_doms = set(self.libvirt_iface.listDomainsID())
+
         self.guests_sem.acquire()
-        for dom_id in set(self.guests) - set(domain_list):
-            del self.guests[dom_id]
+        spawn_list = set(libvirt_list) - set(self.guests)
         self.guests_sem.release()
+        for id in spawn_list:
+            guest = GuestMonitor(self.config, id, self.libvirt_iface)
+            if guest.isAlive():
+                self.guests_sem.acquire()
+                if id not in self.guests:
+                    self.guests[id] = guest
+                else:
+                    del guest
+                self.guests_sem.release()
 
     def wait_for_guest_monitors(self):
         """
         Wait for GuestMonitors to exit
         """
+        while True:
+            self.guests_sem.acquire()
+            if len(self.guests) > 0:
+                (id, thread) = self.guests.popitem()
+            else:
+                id = None
+            self.guests_sem.release()
+            if id is not None:
+                thread.join(0)
+            else:
+                break
+
+    def check_threads(self):
+        """
+        Check for stale and/or deceased threads and remove them.
+        """
+        domain_list = self.libvirt_iface.listDomainsID()
         self.guests_sem.acquire()
-        for dom_id in self.guests.keys():
-            if self.guests[dom_id].isAlive():
-                self.guests[dom_id].join(2)
+        for (id, thread) in self.guests.items():
+            # Check if the domain has ended according to libvirt
+            if id not in domain_list:
+                del self.guests[id]
+            # Check if the thread has died
+            if not thread.isAlive():
+                del self.guests[id]
         self.guests_sem.release()
 
     def interrogate(self):
@@ -90,11 +92,8 @@ class GuestManager(threading.Thread):
         self.logger.info("Guest Manager starting");
         interval = self.config.getint('main', 'guest-manager-interval')
         while self.config.getint('main', 'running') == 1:
-            if not self.spawn_guest_monitors():
-                self.logger.error("A problem occurred while spawning " \
-                                  "GuestMonitors -- terminating")
-                break
-            self.reap_old_guests()
+            self.spawn_guest_monitors()
+            self.check_threads()
             time.sleep(interval)
         self.wait_for_guest_monitors()
         self.logger.info("Guest Manager ending")
