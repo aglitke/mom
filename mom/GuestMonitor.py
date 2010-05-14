@@ -61,9 +61,7 @@ class GuestMonitor(Monitor, threading.Thread):
         self.logger.info("%s starting", self.getName())
         interval = self.config.getint('main', 'guest-monitor-interval')
         while self._should_run():
-            if not self.libvirt_iface.domainIsRunning(self.guest_domain):
-                break
-            data = self.collect()
+            self.collect()
             time.sleep(interval)
         self.logger.info("%s ending", self.getName())
 

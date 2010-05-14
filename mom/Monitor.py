@@ -31,7 +31,7 @@ class Monitor:
             self.plotter = None
         
         self.ready = None 
-        self.terminate = False
+        self._terminate = False
         
     def collect(self):
         """
@@ -66,7 +66,7 @@ class Monitor:
             return None
         except Collector.FatalError, e:
             self._set_not_ready("Fatal Collector error: %s" % e.msg)
-            self.terminate = True
+            self.terminate()
             return None
         if set(data) != self.fields:
             self._set_not_ready("Incomplete data: missing %s" % \
@@ -113,6 +113,12 @@ class Monitor:
             self.variables[var] = val
         self.data_sem.release()
         
+    def terminate(self):
+        """
+        Instruct the Monitor to shut down
+        """
+        self._terminate = True
+        
     def _set_ready(self):
         if self.ready is not True:
             self.logger.info('%s is ready', self.name)
@@ -127,7 +133,7 @@ class Monitor:
         """
         Private helper to determine if the Monitor should continue to run.
         """
-        if self.config.getint('main', 'running') == 1 and not self.terminate:
+        if self.config.getint('main', 'running') == 1 and not self._terminate:
             return True
         else:
             return False
