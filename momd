@@ -127,15 +127,12 @@ def signal_quit(signum, frame):
     logger.info("Received signal %i shutting down.", signum)
     config.set('main', 'running', '0')
 
-
-def threads_ok(thread_list):
+def threads_ok(threads):
     """
-    Check to make sure a list of expected threads are still alive.  Log a
-    warning if any threads have been stuck for awhile.
+    Check to make sure a list of expected threads are still alive
     """
-    now = time.time()
-    for (thread, interval) in thread_list:
-        if not thread.check_thread(now, interval):
+    for t in threads:
+        if not t.isAlive():
             return False
     return True
     
@@ -145,12 +142,6 @@ def wait_for_thread(t, timeout):
     """
     if t.isAlive():
         t.join(timeout)
-        
-def heartbeat(logger, iter=[5]):
-    iter[0] -= 1
-    if iter[0] <= 0:
-        logger.debug("HEARTBEAT")
-        iter[0] = 5
 
 def main():
     global config
@@ -188,18 +179,12 @@ def main():
     guest_manager = GuestManager(config, libvirt_iface)
     system_controller = SystemController(config, rules, libvirt_iface, \
                             host_monitor, guest_manager)
-    thread_list = [
-      ( host_monitor, config.getint('main', 'host-monitor-interval' )),
-      ( guest_manager, config.getint('main', 'guest-manager-interval' )),
-      ( system_controller, config.getint('main', 'system-controller-interval' ))
-    ]
 
     interval = config.getint('main', 'main-loop-interval')
     while config.getint('main', 'running') == 1:
         time.sleep(interval)
-        if not threads_ok(thread_list):
+        if not threads_ok((host_monitor,guest_manager,system_controller)):
             config.set('main', 'running', '0')
-        heartbeat(logger)
 
     wait_for_thread(system_controller, 10)
     wait_for_thread(guest_manager, 5)
