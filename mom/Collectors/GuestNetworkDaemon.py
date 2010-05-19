@@ -3,6 +3,7 @@ import sys
 import signal
 import socket
 import ConfigParser
+import logging
 from mom.Collectors.Collector import *
 from mom.Collectors.HostMemory import HostMemory
 
@@ -144,6 +145,7 @@ class _Server:
         sock_send(conn, response)
 
     def run(self):
+        self.logger.info("Server starting")
         while True:
             (conn, addr) = self.socket.accept()
             self.logger.debug("Connection received from %s", addr)

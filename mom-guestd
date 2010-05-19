@@ -3,12 +3,44 @@
 import socket
 import signal
 import ConfigParser
+import logging
 from mom.Collectors.GuestNetworkDaemon import _Server
 from mom.Collectors.Collector import *
 
 def signal_quit(signum, frame):
     print "Received signal", signum, "shutting down."
     sys.exit(0)
+
+def configure_logger(config):
+    logger = logging.getLogger()
+
+    verbosity = config.get('logging', 'verbosity').lower()
+    if verbosity == '5' or verbosity == 'debug':
+        level = logging.DEBUG
+    elif verbosity == '4' or verbosity == 'info':
+        level = logging.INFO
+    elif verbosity == '3' or verbosity == 'warn':
+        level = logging.WARN
+    elif verbosity == '2' or verbosity == 'error':
+        level = logging.ERROR
+    elif verbosity == '1' or verbosity == 'critical':
+        level = logging.CRITICAL
+    else:
+        level = logging.DEBUG
+    logger.setLevel(level)
+
+    log = config.get('logging', 'log')
+    if log.lower() == 'stdio':
+        handler = logging.StreamHandler()
+    else:
+        print "logging to file %s" % log
+        bytes = config.getint('logging', 'max-bytes')
+        backups = config.getint('logging', 'backup-count')
+        handler = logging.handlers.RotatingFileHandler(log, 'a', bytes, backups)
+    handler.setLevel(level)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 def main():
     """
@@ -23,6 +55,13 @@ def main():
     config.set('main', 'port', '2187')  
     config.set('main', 'min_free', '0.20')  # These two variables
     config.set('main', 'max_free', '0.50')  #  are currently unused
+    config.add_section('logging')
+    config.set('logging', 'log', 'stdio')
+    config.set('logging', 'verbosity', 'info')
+    config.set('logging', 'max-bytes', '2097152')
+    config.set('logging', 'backup-count', '5')
+
+    configure_logger(config)
     server = _Server(config)
     server.run()
 
