@@ -56,18 +56,17 @@ class Monitor:
                 self.plotter.setFields(self.fields)
         
         data = {}
-        try:
-            for c in self.collectors:
+        for c in self.collectors:
+            try:
                 for (key, val) in c.collect().items():
                     if key not in data:
                         data[key] = val
-        except Collector.CollectionError, e:
-            self._set_not_ready("Collection error: %s" % e.msg)
-            return None
-        except Collector.FatalError, e:
-            self._set_not_ready("Fatal Collector error: %s" % e.msg)
-            self.terminate()
-            return None
+            except Collector.CollectionError, e:
+                self._disp_collection_error("Collection error: %s" % e.msg)
+            except Collector.FatalError, e:
+                self._set_not_ready("Fatal Collector error: %s" % e.msg)
+                self.terminate()
+                return None
         if set(data) != self.fields:
             self._set_not_ready("Incomplete data: missing %s" % \
                                 (self.fields - set(data)))
@@ -124,10 +123,16 @@ class Monitor:
             self.logger.info('%s is ready', self.name)
         self.ready = True
 
+    def _disp_collection_error(self, message=None):
+        if message is not None:
+            if self.ready is False:
+                self.logger.debug('%s: %s', self.name, message)
+            else: # True or None
+                self.logger.warn('%s: %s', self.name, message)
+
     def _set_not_ready(self, message=None):
-        if self.ready is not False and message is not None:
-            self.logger.warn('%s: %s', self.name, message)
         self.ready = False
+        self._disp_collection_error(message)
 
     def _should_run(self):
         """

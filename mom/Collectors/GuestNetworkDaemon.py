@@ -62,7 +62,6 @@ class GuestNetworkDaemon(Collector):
         self.socket = None
         self.name = properties['name']
         self.state = 'ok'
-        self.logger = logging.getLogger('mom.Collectors.GuestNetworkDaemon')
 
     def connect(self):
         try:
