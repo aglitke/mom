@@ -16,8 +16,7 @@ def sock_send(conn, msg):
     while sent < len(msg):
         ret = conn.send(msg[sent:])
         if ret == 0:
-            #logger.warn("Connection interrupted while sending")
-            return
+            raise socket.error("Unable to send on socket")
         sent = sent + ret
 
 def sock_receive(conn):
@@ -33,7 +32,17 @@ def sock_receive(conn):
         msg = msg + chunk
         if msg[-1:] == '\n':
             done = True
-    return msg.rstrip("\n")
+    if len(msg) == 0:
+        raise socket.error("Unable to receive on socket")
+    else:
+        return msg.rstrip("\n")
+
+def sock_close(sock):
+    try:
+        sock.shutdown(socket.SHUT_RDWR)
+        sock.close()
+    except socket.error:
+        pass
 
 class GuestNetworkDaemon(Collector):
     """
@@ -50,9 +59,21 @@ class GuestNetworkDaemon(Collector):
     def __init__(self, properties):
         self.ip = properties['ip']
         self.port = 2187              # XXX: This needs to be configurable
+        self.socket = None
         self.name = properties['name']
-        socket.setdefaulttimeout(1)
         self.state = 'ok'
+        self.logger = logging.getLogger('mom.Collectors.GuestNetworkDaemon')
+
+    def connect(self):
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.settimeout(5)
+            self.socket.connect((self.ip, self.port))
+        except socket.error, msg:
+            sock_close(self.socket)
+            self.socket = None             
+            raise CollectionError('Network connection to %s failed: %s' %
+                                  (self.name, msg))
 
     def collect(self):
         if self.state == 'dead':
@@ -62,18 +83,17 @@ class GuestNetworkDaemon(Collector):
             raise CollectionError('No IP address for guest %s' % self.name)
 
         data = ""
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if self.socket is None:
+            self.connect()
         try:
-            s.connect((self.ip, self.port))
-            sock_send(s, "stats")
-            data = sock_receive(s)     
-        except socket.error:
-            if self.state != 'failing':
-                self.state = 'failing'
-                raise CollectionError('Nwtwork communication to %s failed' % \
-                                      self.name)
-            return {}
-        s.close()
+            sock_send(self.socket, "stats")
+            data = sock_receive(self.socket)
+        except socket.error, msg:
+            sock_close(self.socket)
+            self.socket = None
+            raise CollectionError('Network communication to %s failed: %s' %
+                                  (self.name, msg))
+
         self.state = 'ok'
 
         # Parse the data string
@@ -122,8 +142,7 @@ class _Server:
         self.max_free = config.get('main', 'max_free')
 
     def __del__(self):
-        if self.socket is not None:
-            self.socket.close()
+        sock_close(self.socket)
         if self.vmstat is not None:    
             self.vmstat.close()
 
@@ -144,15 +163,29 @@ class _Server:
                     data['swap_out'], majflt, minflt)
         sock_send(conn, response)
 
+    def session(self, conn, addr):
+        self.logger.debug("Connection received from %s", addr)
+        conn.settimeout(10)
+        while self.running:
+            try:
+                cmd = sock_receive(conn)
+                if cmd == "props":
+                    self.send_props(conn)
+                elif cmd == "stats":
+                    self.send_stats(conn)
+                else:
+                    break
+            except socket.error, msg:
+                self.logger.warn("Exception: %s" % msg)
+                break
+        sock_close(conn)
+        self.logger.debug("Connection closed")
+
     def run(self):
         self.logger.info("Server starting")
-        while True:
+        self.running = True
+        while self.running:
             (conn, addr) = self.socket.accept()
-            self.logger.debug("Connection received from %s", addr)
-            cmd = sock_receive(conn)
-            self.logger.debug("Got command %s", cmd)
-            if cmd == "props":
-                self.send_props(conn)
-            elif cmd == "stats":
-                self.send_stats(conn)
-            conn.close()
+            self.session(conn, addr)
+        sock_close(self.socket)
+
