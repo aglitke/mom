@@ -7,7 +7,7 @@ try:
 except:
     pass
 
-class StackDumper():
+class StackDumper:
     def __init__(self):
         self.logger = logging.getLogger('mom.debug.StackDumper')
 
