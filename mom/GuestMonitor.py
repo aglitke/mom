@@ -52,9 +52,11 @@ class GuestMonitor(Monitor, threading.Thread):
         data['uuid'] = self.libvirt_iface.domainGetUUID(self.guest_domain)
         data['name'] = self.libvirt_iface.domainGetName(self.guest_domain)
         data['pid'] = self.get_guest_pid(data['uuid'])
-        data['ip'] = self.get_guest_ip(data['name'])
         if None in data.values():
                 return None
+                
+        # The IP address is optional
+        data['ip'] = self.get_guest_ip(data['name'])
         return data
 
     def run(self):
