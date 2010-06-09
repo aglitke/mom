@@ -30,7 +30,10 @@ class GuestQemuProc(Collector):
 
         # Only report the change in these statistics since the last collection
         self.pid_stat_file.seek(0)
-        stats = self.pid_stat_file.read().split()
+        try:
+            stats = self.pid_stat_file.read().split()
+        except IOError, (errno, strerror):
+            raise CollectionError("Cannot read stat file: %s" % strerror)
         cur_minor_faults = int(stats[9])
         cur_major_faults = int(stats[11])
         rss = int(stats[23])
