@@ -11,18 +11,22 @@ class Balloon:
         self.libvirt_iface = properties['libvirt_iface']
         self.logger = logging.getLogger('mom.Controllers.Balloon')
         
-    def process_guest(self, entities):
-        target = entities['Guest'].GetControl('balloon_target')
+    def process_guest(self, guest):
+        target = guest.GetControl('balloon_target')
         if target is not None:
             target = int(target)
-            id = entities['Guest'].Prop('id')
-            prev_target = entities['Guest'].Stat('libvirt_curmem')
+            id = guest.Prop('id')
+            prev_target = guest.Stat('libvirt_curmem')
             self.logger.info("Ballooning guest:%s from %s to %s", \
                     id, prev_target, target)
             dom = self.libvirt_iface.getDomainFromID(id)
             if dom is not None:
                 if self.libvirt_iface.domainSetBalloonTarget(dom, target):
                     self.logger.warn("Error while ballooning guest:%i", id)
+                    
+    def process(self, host, guests):
+        for (id, guest) in guests.items():
+            self.process_guest(guest)
 
 def instance(properties):
     return Balloon(properties)

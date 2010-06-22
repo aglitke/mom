@@ -57,8 +57,8 @@ class SystemController(threading.Thread):
                 entities = { 'Host': host, 'Guest': guest_list[i] }
                 if Rules.evaluate(self.rules, entities) is False:
                     continue
-                for c in self.controllers:
-                    c.process_guest(entities)
+        for c in self.controllers:
+            c.process(host, guest_list)
 
     def run(self):
         self.logger.info("System Controller starting")

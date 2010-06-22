@@ -20,10 +20,10 @@ class KSM:
             self.logger.warn("KSM: Failed to write %s: %s", fname, strerror)
         file.close()
 
-    def process_guest(self, entities):
+    def process(self, host, guests):
         outputs = {}
         for key in self.cur.keys():
-            rule_var =  entities['Host'].GetControl('ksm_' + key)
+            rule_var =  host.GetControl('ksm_' + key)
             if rule_var is not None and rule_var != self.cur[key]:
                 outputs[key] = rule_var
                 self.cur[key] = rule_var
