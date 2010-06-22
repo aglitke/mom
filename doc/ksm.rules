@@ -26,14 +26,14 @@ ksm_free_percent = 0.20
 
 ### Helper functions
 def change_npages(delta):
-    global ksm_npages_min, ksm_npages_max, Host, Output
+    global ksm_npages_min, ksm_npages_max, Host
 
     newval = Host.ksm_pages_to_scan + delta
     if newval > ksm_npages_max:
         newval = ksm_npages_max
     elif newval < ksm_npages_min:
         newval = ksm_npages_min
-    Output.SetVar('ksm_pages_to_scan', newval)
+    Host.Control('ksm_pages_to_scan', newval)
 
 ### Main Script
 # Methodology: Since running KSM does incur some overhead, try to run it only 
@@ -49,10 +49,10 @@ if ksm_pressure_threshold + ksm_committed < Host.mem_available and \
         Host.StatAvg('mem_free') > ksm_pressure_threshold:
     # Disable KSM because memory isn't overcommited to qemu processes and
     # there is enough free memory.
-    Output.SetVar('ksm_run', 0)
+    Host.Control('ksm_run', 0)
 else:
-    Output.SetVar('ksm_run', 1)
-    Output.SetVar('ksm_sleep_millisecs', ksm_sleep_ms_baseline * \
+    Host.Control('ksm_run', 1)
+    Host.Control('ksm_sleep_millisecs', ksm_sleep_ms_baseline * \
                                          16 * 1024 * 1024 / Host.mem_available)
     if Host.StatAvg('mem_free') < ksm_pressure_threshold:
         change_npages(ksm_pages_boost)

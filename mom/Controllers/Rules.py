@@ -20,7 +20,6 @@ def evaluate_script(rules, entities):
     # Allow some basic Python concepts to be used in the rule script
     my_locals = { 'True': True, 'False': False, 'abs': abs}
     # Place input and output Entity objects into the script namespace
-    entities['Output'] = Entity()
     for name in entities:
         my_locals[name] = entities[name]
     

@@ -13,6 +13,7 @@ class Entity:
         self.properties = {}
         self.variables = {}
         self.statistics = []
+        self.controls = {}
         self.monitor = monitor
 
     def _set_property(self, name, val):
@@ -102,5 +103,21 @@ class Entity:
         """
         if name in self.variables:
             return self.variables[name]
+        else:
+            return None
+            
+    def Control(self, name, val):
+        """
+        Set a control variable in this instance.
+        """
+        self.controls[name] = val
+        
+    def GetControl(self, name):
+        """
+        Get the value of a control variable in this instance if it exists.
+        Returns None if the control has not been set.
+        """
+        if name in self.controls:
+            return self.controls[name]
         else:
             return None
