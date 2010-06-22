@@ -50,13 +50,9 @@ class SystemController(threading.Thread):
         host = self.properties['host_monitor'].interrogate()
         if host is None:
             return
-        entities = { 'Host': host }
         guest_list = self.properties['guest_manager'].interrogate()
-        for i in guest_list:
-            if guest_list[i] is not None:
-                entities = { 'Host': host, 'Guest': guest_list[i] }
-                if Rules.evaluate(self.rules, entities) is False:
-                    continue
+        if Rules.evaluate(self.rules, host, guest_list) is False:
+            return
         for c in self.controllers:
             c.process(host, guest_list)
 

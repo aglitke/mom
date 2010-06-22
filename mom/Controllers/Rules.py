@@ -11,23 +11,30 @@ class RuleError(Exception):
     def __init__(self, message):
         self.message = message
 
-def evaluate_script(rules, entities):
+def evaluate_script(rules, host, guests):
     """
     Construct an environment for the rule script and evaluate it.
     Return: True if evaluation was successful, False otherwise.
     """
     global debug
     # Allow some basic Python concepts to be used in the rule script
-    my_locals = { 'True': True, 'False': False, 'abs': abs}
-    # Place input and output Entity objects into the script namespace
-    for name in entities:
-        my_locals[name] = entities[name]
+    my_locals = { 'True': True, 'False': False, 'abs': abs }
+    my_locals['Host'] = host
+    my_locals['Guests'] = guests
     
     if debug:
         print "### DEBUG ### Input for rules processing:"
-        for name in entities:
-            entities[name]._disp(name)
+        host._disp('Host')
+        for (id, guest) in guests.items():
+            guest._disp("Guest:%i" % id)
         print "### DEBUG ###\n"
+
+    # This function is callable from within the rules script.  It will call the
+    # given function for each guest with the given optional arguments.
+    def for_each_guest(func, guests=guests, *args):
+        for (id, guest) in guests.items():
+            func(guest, args)
+    my_locals['for_each_guest'] = for_each_guest
 
     # Evaluate script
     try:
@@ -37,19 +44,20 @@ def evaluate_script(rules, entities):
         return False
 
     # Store any variables back to the persistent entities
-    for entity in entities.values():
-        entity._store_variables()
+    host._store_variables()
+    for (id, guest) in guests.items():
+        guest._store_variables()
 
     return True
     
-def evaluate(rules, entities):
+def evaluate(rules, host, guests):
     """
     Stub function to allow multiple rule formats to be evaluated.
     """
     if rules == None:
         return False
     elif rules['type'] == 'script':
-        return evaluate_script(rules, entities)
+        return evaluate_script(rules, host, guests)
     else:
         return False
 
