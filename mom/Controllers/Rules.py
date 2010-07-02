@@ -31,7 +31,7 @@ def evaluate_script(rules, host, guests):
 
     # This function is callable from within the rules script.  It will call the
     # given function for each guest with the given optional arguments.
-    def for_each_guest(func, guests=guests, *args):
+    def for_each_guest(func, args={}, guests=guests):
         for (id, guest) in guests.items():
             func(guest, args)
     my_locals['for_each_guest'] = for_each_guest
