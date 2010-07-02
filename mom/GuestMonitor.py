@@ -73,7 +73,7 @@ class GuestMonitor(Monitor, threading.Thread):
         this guest.  Scan ps output looking for our uuid and record the pid.
         Something is probably wrong if more or less than 1 match is returned.
         """
-        p1 = Popen(["ps", "ax"], stdout=PIPE).communicate()[0]
+        p1 = Popen(["ps", "axww"], stdout=PIPE).communicate()[0]
         matches = re.findall("^\s*(\d+)\s+.*" + uuid, p1, re.M)
         if len(matches) < 1:
             self.logger.warn("No matching process for domain with uuid %s", \
