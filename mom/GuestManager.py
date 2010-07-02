@@ -80,7 +80,9 @@ class GuestManager(threading.Thread):
         ret = {}
         self.guests_sem.acquire()
         for (id, monitor) in self.guests.items():
-            ret[id] = monitor.interrogate()
+            entity = monitor.interrogate()
+            if entity is not None:
+                ret[id] = entity
         self.guests_sem.release()
         return ret
 
