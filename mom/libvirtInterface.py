@@ -55,7 +55,8 @@ class libvirtInterface:
         try:
             self._connect()
         except libvirt.libvirtError, e:
-            self.logger.error('libvirtInterface: Exception while reconnecting')
+            self.logger.error("libvirtInterface: Exception while " \
+                    "reconnecting: %s", e.message);
 
     def listDomainsID(self):
         try:
