@@ -382,7 +382,11 @@ def eval(e, string):
 def repl(e):
     while True:
         print '>>>',
-        string = raw_input()
+        try:
+            string = raw_input()
+        except EOFError:
+            break
+
         print eval(e, string)[0]
 
 if __name__ == '__main__':
@@ -396,7 +400,9 @@ if __name__ == '__main__':
             lines = f.read()
         finally:
             f.close()
+        results = eval(e, lines)
+        for result in results:
+            print result
+    else:
+        repl(e)
 
-        eval(e, lines)
-
-    repl(e)
