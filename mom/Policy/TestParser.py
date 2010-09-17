@@ -43,15 +43,23 @@ class TestEval(unittest.TestCase):
     def test_basic_math(self):
         pol = """
         10
+        00
+        .3
         (* 0 1)
         (+ 1 2)
         (/ 11 2)
+        (/ 11 2.0)
         (* 3 6)
         (- 1 9)
         (* (- 8 6) 9)
         (>> (<< 1 4) 2)
+        (+ 0xFF 0x1)
+        (* 011 02)
+        (+ 0xa 10)
+        (+ 10.0e3 100e-2)
         """
-        self.verify(pol, [ 10, 0, 3, 5, 18, -8, 18, 4 ])
+        self.verify(pol, [ 10, 0, 0.3, 0, 3, 5, 5.5, 18, -8, 18, 4, 256, 18, 20,
+                           10001.0 ])
         
     def test_compare(self):
         pol = """
@@ -61,8 +69,9 @@ class TestEval(unittest.TestCase):
         (>= 2 (/ 10 2))
         (== (+ 1 2) (/ 9 3))
         (!= "foo" "foo")
+        (== 0x0 0)
         """
-        self.verify(pol, [ False, True, True, False, True, False ])
+        self.verify(pol, [ False, True, True, False, True, False, True ])
         
     def test_vars(self):
         pol = """
@@ -73,8 +82,10 @@ class TestEval(unittest.TestCase):
         (set a 8)
         (+ a b)
         (* foo 2)
+        (defvar e3 7)
+        (+ 1 e3)
         """
-        self.verify(pol, [ 'bar', 5, 6, 11, 8, 14, "barbar" ])
+        self.verify(pol, [ 'bar', 5, 6, 11, 8, 14, "barbar", 7, 8 ])
         
     def test_funcs(self):
         pol = """

@@ -29,6 +29,11 @@ class Token(object):
 
     def __repr__(self):
         return '[%s %s]' % (self.kind, self.value)
+        
+class NumericToken(Token):
+    def __init__(self, type, value):
+        self.type = type
+        Token.__init__(self, 'number', value)
 
 class Scanner(GenericScanner):
     def __init__(self, operators=''):
@@ -69,17 +74,26 @@ class Scanner(GenericScanner):
         r" '([^'\\]|\\.)*' "
         self.rv.append(Token('string', s))
 
-    def t_number(self, s):
-        r' (0|([1-9][0-9]*))(\.[0-9]+)?([Ee][0-9]+)? '
-        self.rv.append(Token('number', s))
+    def t_float(self, s):
+        r' -?(0|([1-9][0-9]*))*(\.[0-9]+)([Ee][+-]?[0-9]+)? '
+        self.rv.append(NumericToken('float', s)) 
+
+    def t_integer(self, s):
+        r' -?(0(?![0-9Xx])|[1-9][0-9]*)(?![0-9eE]) '
+        self.rv.append(NumericToken('integer', s))
+        
+    def t_integer_with_exponent(self, s):
+        r' -?(0(?![0-9Xx])|[1-9][0-9]*)[Ee][+-]?[0-9]+ '
+        # Python only recognizes scientific notation on float types
+        self.rv.append(NumericToken('float', s))
 
     def t_hex(self, s):
         r' 0[Xx][0-9A-Fa-f]+ '
-        self.rv.append(Token('hex', s))
+        self.rv.append(NumericToken('hex', s))
 
     def t_octal(self, s):
         r' 0[0-9]+ '
-        self.rv.append(Token('octal', s))
+        self.rv.append(NumericToken('octal', s))
 
     def t_builtin_op(self, s):
         r' [\(\){}\[\]] '
@@ -131,8 +145,6 @@ class Parser(GenericParser):
         '''
           value ::= operator
           value ::= number
-          value ::= hex
-          value ::= octal
           value ::= operator
           value ::= symbol
           value ::= string
@@ -179,7 +191,7 @@ class GenericEvaluator(object):
                 if types[i].value == 'code':
                     continue
                 elif types[i].value == 'symbol':
-                    if type(args[i]) != Token or args[i].kind != 'symbol':
+                    if not isinstance(args[i], Token) or args[i].kind != 'symbol':
                         raise Exception('malformed expression')
                     args[i] = args[i].value
                 else:
@@ -187,9 +199,9 @@ class GenericEvaluator(object):
         return fn(*args)
 
     def eval(self, code):
-        if type(code) == Token:
+        if isinstance(code, Token):
             if code.kind == 'number':
-                return int(code.value)
+                return self.eval_number(code)
             elif code.kind == 'string':
                 return code.value[1:-1]
             elif code.kind == 'symbol':
@@ -198,7 +210,7 @@ class GenericEvaluator(object):
                 raise Exception('Unexpected token type "%s"' % code.kind)
 
         node = code[0]
-        if type(node) != Token:
+        if not isinstance(node, Token):
             print code
             raise Exception('Expected simple token as arg 1')
 
@@ -260,6 +272,14 @@ class Evaluator(GenericEvaluator):
 
     def eval_symbol(self, name):
         return self.stack.get(name)
+        
+    def eval_number(self, token):
+        if token.type == 'float':
+            return float(token.value)
+        elif token.type in ('integer', 'hex', 'octal'):
+            return int(token.value, 0)
+        else:
+            raise Exception("Unsupported numeric type for token: %s" % token)
 
     def default(self, name, args):
         if name == 'eval':
