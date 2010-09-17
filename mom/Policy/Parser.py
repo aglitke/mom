@@ -61,6 +61,10 @@ class Scanner(GenericScanner):
     def t_whitespace(self, s):
         r' \s+ '
         pass
+    
+    def t_pound_comment(self, s):
+        r' \#.*?\n '
+        pass
 
     def t_symbol(self, s):
         r' [A-Za-z_][A-Za-z0-9_\-\.]* '

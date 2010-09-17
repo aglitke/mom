@@ -25,6 +25,16 @@ class TestEval(unittest.TestCase):
         results = Parser.eval(self.e, pol)
         self.assertEqual(results, expected)
 
+    def test_comments(self):
+        pol = """
+        # This is a full-line pound comment
+        12 # A partial-line comment with (+ 23 43) keywords
+        (+ 3 # An expression with embedded comments
+        2)
+        """
+        results = Parser.eval(self.e, pol)
+        self.assertEqual(results, [ 12, 5 ])
+
     def test_whitespace(self):
         pol = """
         (+ 1 
@@ -35,6 +45,8 @@ class TestEval(unittest.TestCase):
     def test_string(self):
         pol = """
         "foo" "bar"
+        
+        # Operators on strings have the same effect as for Python
         (+ "Hello " "World!")
         (+ (* 3 "Hey ") "!")
         """
@@ -43,20 +55,20 @@ class TestEval(unittest.TestCase):
     def test_basic_math(self):
         pol = """
         10
-        00
-        .3
+        00                  # Octal
+        .3                  # The leading 0 on a float is not required
         (* 0 1)
         (+ 1 2)
-        (/ 11 2)
-        (/ 11 2.0)
+        (/ 11 2)            # Integer division
+        (/ 11 2.0)          # Floating point division
         (* 3 6)
-        (- 1 9)
+        (- 1 9)             # Negative result
         (* (- 8 6) 9)
         (>> (<< 1 4) 2)
-        (+ 0xFF 0x1)
+        (+ 0xFF 0x1)        # Hex numbers
         (* 011 02)
-        (+ 0xa 10)
-        (+ 10.0e3 100e-2)
+        (+ 0xa 10)          # Numeric type mixing
+        (+ 10.0e3 100e-2)   # Scientific notation for integers and floats
         """
         self.verify(pol, [ 10, 0, 0.3, 0, 3, 5, 5.5, 18, -8, 18, 4, 256, 18, 20,
                            10001.0 ])
@@ -83,7 +95,7 @@ class TestEval(unittest.TestCase):
         (+ a b)
         (* foo 2)
         (defvar e3 7)
-        (+ 1 e3)
+        (+ 1 e3)        # Make sure e3 is not mistaken for scientific notation
         """
         self.verify(pol, [ 'bar', 5, 6, 11, 8, 14, "barbar", 7, 8 ])
         
@@ -97,7 +109,7 @@ class TestEval(unittest.TestCase):
             (- 2 (bar b)))
         (baz 12)
         (def foo (a) {
-            (def bar (b) (+ b 1))
+            (def bar (b) (+ b 1))   # Nested function
             (bar a)
         })
         (foo 9)
@@ -107,9 +119,11 @@ class TestEval(unittest.TestCase):
     def test_let(self):
         pol = """
         (def foo (a) (+ 2 a))
+        (defvar a 2)
         (let ((a 1) (b 2)) (foo a))
+        a                               # Value of 'a' unaffected by let
         """
-        self.verify(pol, [ 'foo', 3 ])
+        self.verify(pol, [ 'foo', 2, 3, 2 ])
         
     def test_if(self):
         pol = """
@@ -123,29 +137,29 @@ class TestEval(unittest.TestCase):
         (if b 1 0)
         (f (> 2 1))
         """
-        self.verify(pol, [ 1, 0, 'f', 4, 0, "yes" ])
+        self.verify(pol, [ 1, 0, 'f', 4, 0, "yes"])
 
     def test_scope(self):
         pol = """
         (defvar a 10)
-        (def foo (b) (set a b))
+        (def foo (b) (set a b))         # set affects the global 'a'
         (foo 2)
         a
-        (def foo (b) (defvar a b))
+        (def foo (b) (defvar a b))      # defvar creates a local 'a'
         (foo 4)
         a
         (set a 5)
-        (let ((a 4)) a)
+        (let ((a 4)) a)                 # let creates a local 'a'
         a
-        (if (== a 5) (defvar a 4) 0)
+        (if (== a 5) (defvar a 4) 0)    # if does not create a new scope
         a
         """
         self.verify(pol, [ 10, 'foo', 2, 2, 'foo', 4, 2, 5, 4, 5, 4, 4 ]) 
 
     def test_multi_statements(self):
         pol = """
-        { 10 4 }
-        (def f (a b) {
+        { 10 4 }                # A multi-statement evaluates to the last value
+        (def f (a b) {          # Use them for function bodies
             (defvar c (+ a b))
             (set c (+ 1 c))
             c
@@ -153,12 +167,12 @@ class TestEval(unittest.TestCase):
         (f 4 5)
         
         (defvar q 11)
-        (let ((q 2) (r 3)) {
+        (let ((q 2) (r 3)) {            # Use them for let statements
             q r
             (- r q)
         })
         
-        (if (== q 11) {
+        (if (== q 11) {                 # Use them in if statements
             "q maintains proper scope"
             (set q 12)
         } {
