@@ -85,6 +85,18 @@ class TestEval(unittest.TestCase):
         """
         self.verify(pol, [ False, True, True, False, True, False, True ])
         
+    def test_logic(self):
+        pol = """           # Again, these bahave according to Python rules
+        (and 1 "")          # "" evaluates to false
+        (and 0 1)           #   as does 0 -- the first false value is returned
+        (and 1 2)           # If all values are true, the last value is returned
+        (or "" 17)          # or returns the first true value encountered
+        (or "" "")          # if all values are false, or returns the last one
+        (not "")            # The only false values are: 0 and ""
+        (not -0)
+        """
+        self.verify(pol, [ "", 0, 2, 17, "", True, True ])
+        
     def test_vars(self):
         pol = """
         (defvar foo "bar")

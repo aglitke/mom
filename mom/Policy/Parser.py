@@ -266,7 +266,8 @@ class Evaluator(GenericEvaluator):
                     '<': 'lt', '>': 'gt',
                     '<=': 'lte', '>=': 'gte',
                     '<<': 'shl', '>>': 'shr',
-                    '==': 'eq', '!=': 'neq'}
+                    '==': 'eq', '!=': 'neq',
+                    'and': 'and', 'or': 'or', 'not': 'not'}
 
     def __init__(self):
         GenericEvaluator.__init__(self)
@@ -372,6 +373,15 @@ class Evaluator(GenericEvaluator):
 
     def c_shr(self, x, y):
         return x >> y
+        
+    def c_and(self, x, y):
+        return x and y
+        
+    def c_or(self, x, y):
+        return x or y
+        
+    def c_not(self, x):
+        return not x
 
 def eval(e, string):
     scanner = Scanner(e.get_operators())
