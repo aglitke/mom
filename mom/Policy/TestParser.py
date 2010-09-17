@@ -96,8 +96,13 @@ class TestEval(unittest.TestCase):
         (def baz (b)
             (- 2 (bar b)))
         (baz 12)
+        (def foo (a) {
+            (def bar (b) (+ b 1))
+            (bar a)
+        })
+        (foo 9)
         """
-        self.verify(pol, [ 'foo', 'bar', 1, 'baz',  -22])
+        self.verify(pol, [ 'foo', 'bar', 1, 'baz',  -22, 'foo', 10 ])
 
     def test_let(self):
         pol = """
@@ -136,6 +141,32 @@ class TestEval(unittest.TestCase):
         a
         """
         self.verify(pol, [ 10, 'foo', 2, 2, 'foo', 4, 2, 5, 4, 5, 4, 4 ]) 
+
+    def test_multi_statements(self):
+        pol = """
+        { 10 4 }
+        (def f (a b) {
+            (defvar c (+ a b))
+            (set c (+ 1 c))
+            c
+        })
+        (f 4 5)
+        
+        (defvar q 11)
+        (let ((q 2) (r 3)) {
+            q r
+            (- r q)
+        })
+        
+        (if (== q 11) {
+            "q maintains proper scope"
+            (set q 12)
+        } {
+            "oops, q has the wrong value"
+        })
+        (- q 10)
+        """
+        self.verify(pol, [ 4, 'f', 10, 11, 1, 12, 2 ])
 
 if __name__ == '__main__':
     unittest.main()

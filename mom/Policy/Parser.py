@@ -139,7 +139,7 @@ class Parser(GenericParser):
           curly_list ::= { }
           curly_list ::= { value_list }
         '''
-        return self.mklist(args)
+        return [Token('symbol', 'eval')] + self.mklist(args)
 
     def p_value(self, args):
         '''
@@ -283,7 +283,7 @@ class Evaluator(GenericEvaluator):
 
     def default(self, name, args):
         if name == 'eval':
-            return map(self.eval, args)
+            return map(self.eval, args)[-1]
 
         params, code = self.funcs[name]
         if len(params) != len(args):
