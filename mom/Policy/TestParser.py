@@ -193,6 +193,37 @@ class TestEval(unittest.TestCase):
         (- q 10)
         """
         self.verify(pol, [ 4, 'f', 10, 11, 1, 12, 2 ])
+        
+    def test_entities(self):
+        class TestEntity(object):
+            def __init__(self):
+                self.a = 12
+                self.b = 7
+            def mod(self, a, b):
+                self.a = a % b
+                return self.a
+        entity = TestEntity()
+        self.e.stack.set('Entity', entity, True)
+        
+        pol = """
+        Entity.a                    # Read variables
+        Entity.b
+        (Entity.mod Entity.b 4)     # Call functions
+        """
+        self.verify(pol, [ 12, 7, 3 ])
+        self.assertEqual(entity.a, 3)   # The 'mod' function changes Entity.a
+        
+    def test_entity_write(self):
+        class TestEntity(object):
+            def __init__(self):
+                self.a = 12
+        self.e.stack.set('Entity', TestEntity(), True)
+        pol = """
+        (set Entity.a 1)
+        """
+        # Direct modification of Entity attributes is explicitly not enabled
+        #  - but may be in the future if needed.
+        self.assertRaises(Exception, Parser.eval, (self.e, pol))
 
 if __name__ == '__main__':
     unittest.main()

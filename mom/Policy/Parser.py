@@ -225,7 +225,11 @@ class GenericEvaluator(object):
         else:
             raise Exception('Unexpected token type in arg 1 "%s"' % node.kind)
 
-        if hasattr(self, 'c_%s' % name):
+        func = self.stack.get(name, allow_undefined=True)
+        if func is not None:
+            args = map(self.eval, code[1:])
+            return func(*args)
+        elif hasattr(self, 'c_%s' % name):
             return self._dispatch(getattr(self, 'c_%s' % name), code[1:])
         elif hasattr(self, "default"):
             return self.default(name, code[1:])
@@ -242,10 +246,19 @@ class VariableStack(object):
     def leave_scope(self):
         self.stack = self.stack[1:]
 
-    def get(self, name):
+    def get(self, name, allow_undefined=False):
+        # Split the name on '.' to handle object references
+        parts = name.split('.')
+        obj = parts[0]
         for scope in self.stack:
-            if scope.has_key(name):
-                return scope[name]
+            if scope.has_key(obj):
+                if len(parts) > 1:
+                    if hasattr(scope[obj], parts[1]):
+                        return getattr(scope[obj], parts[1])
+                else:
+                    return scope[obj]
+        if allow_undefined:
+            return None
         raise Exception("undefined symbol %s" % name)
 
     def set(self, name, value, alloc=False):
@@ -383,11 +396,14 @@ class Evaluator(GenericEvaluator):
     def c_not(self, x):
         return not x
 
-def eval(e, string):
+def get_code(e, string):
     scanner = Scanner(e.get_operators())
     tokens = scanner.tokenize(string)
     parser = Parser(start='value_list')
-    code = parser.parse(tokens)
+    return parser.parse(tokens)
+
+def eval(e, string):
+    code = get_code(e, string)
     results = []
     for expr in code:
         results.append(e.eval(expr))
