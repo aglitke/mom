@@ -225,5 +225,11 @@ class TestEval(unittest.TestCase):
         #  - but may be in the future if needed.
         self.assertRaises(Exception, Parser.eval, (self.e, pol))
 
+    def test_externals(self):
+        pol = """
+        (+ (abs -21) (abs 21))
+        """
+        self.verify(pol, [ 42 ])
+
 if __name__ == '__main__':
     unittest.main()

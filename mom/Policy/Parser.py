@@ -14,6 +14,7 @@
 # License along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
+import re
 from spark import GenericScanner, GenericParser
 
 class Token(object):
@@ -159,6 +160,16 @@ class Parser(GenericParser):
          '''
         return args[0]
 
+class ExternalFunctions(object):
+    '''
+    This class defines a set of Python functions that will be callable from
+    within a policy definition.  Each function must be defined as a static
+    method.
+    '''
+    @staticmethod
+    def abs(x):
+        return __builtins__['abs'](x)
+
 class GenericEvaluator(object):
     operator_map = {}
 
@@ -287,6 +298,12 @@ class Evaluator(GenericEvaluator):
         self.stack = VariableStack()
         self.funcs = {}
         self.stack.enter_scope()
+        self.import_externs()
+
+    def import_externs(self):
+        for i in dir(ExternalFunctions):
+            if not re.match("__", i):
+                self.stack.set(i, getattr(ExternalFunctions, i), True)
 
     def eval_symbol(self, name):
         return self.stack.get(name)
