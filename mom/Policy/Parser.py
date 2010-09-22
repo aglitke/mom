@@ -360,6 +360,22 @@ class Evaluator(GenericEvaluator):
         self.stack.leave_scope()
         return result
 
+    def c_with(self, iterable, iterator, code):
+        'symbol symbol code'
+        
+        # Iteration is restricted to the list of Guest entities
+        if iterable != 'Guests':
+            raise Exception("Unexpected iterable '%s' in with statement" %
+                                iterable)
+        list = self.stack.get(iterable)
+        result = []
+        for item in list:
+            self.stack.enter_scope()
+            self.stack.set(iterator, item, True)
+            result.append(self.eval(code))
+            self.stack.leave_scope()
+        return result
+
     def c_if(self, cond, yes, no):
         'value code code'
 

@@ -230,6 +230,25 @@ class TestEval(unittest.TestCase):
         (+ (abs -21) (abs 21))
         """
         self.verify(pol, [ 42 ])
+        
+    def test_with(self):
+        class Guest(object):
+            def __init__(self, num):
+                self.num = num
+            def name(self):
+                return "Guest-%i" % self.num
+        guest_list = [ Guest(1), Guest(2), Guest(4) ]
+        self.e.stack.set('Guests', guest_list, True)
+        pol = """
+        (def guestName (guest) (+ "This guest's name is " (guest.name)))
+        (with Guests guest (guestName guest))
+        """
+        # The results of 'with' are returned in their own list
+        # This means that (with ...) cannot be evaluated yet
+        self.verify(pol, [ "guestName",
+                           [ "This guest's name is Guest-1",
+                             "This guest's name is Guest-2",
+                             "This guest's name is Guest-4" ] ])
 
 if __name__ == '__main__':
     unittest.main()
