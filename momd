@@ -41,6 +41,7 @@ def read_config(fname, options):
     config.set('main', 'guest-manager-interval', '5')
     config.set('main', 'guest-monitor-interval', '5')
     config.set('main', 'system-controller-interval', '10')
+    config.set('main', 'policy-engine-interval', '10')
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
     config.set('main', 'controllers', 'Balloon')
