@@ -41,7 +41,7 @@ class Balloon:
                     self.logger.warn("Error while ballooning guest:%i", id)
                     
     def process(self, host, guests):
-        for (id, guest) in guests.items():
+        for guest in guests:
             self.process_guest(guest)
 
 def instance(properties):

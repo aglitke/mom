@@ -1,86 +1,90 @@
-# Mom Rules type=script
-
 ### Auto-Balloon ###############################################################
 
 ### Constants
 # If the percentage of host free memory drops below this value
 # then we will consider the host to be under memory pressure
-pressure_threshold = 0.20
+(defvar pressure_threshold 0.20)
 
 # If pressure threshold drops below this level, then the pressure
 # is critical and more aggressive ballooning will be employed.
-pressure_critical = 0.05
+(defvar pressure_critical 0.05)
 
 # This is the minimum percentage of free memory that an unconstrained
 # guest would like to maintain
-min_guest_free_percent = 0.20
+(defvar min_guest_free_percent 0.20)
 
 # Don't change a guest's memory by more than this percent of total memory
-max_balloon_change_percent = 0.05
+(defvar max_balloon_change_percent 0.05)
 
 # Only ballooning operations that change the balloon by this percentage
 # of current guest memory should be undertaken to avoid overhead
-min_balloon_change_percent = 0.0025
+(defvar min_balloon_change_percent 0.0025)
 
 ### Helper functions
 # Check if the proposed new balloon value is a large-enough
 # change to justify a balloon operation.  This prevents us from
 # introducing overhead through lots of small ballooning operations
-def change_big_enough(guest, new_val):
-    global min_balloon_change_percent
-    if abs(new_val - guest.libvirt_curmem) > \
-            (min_balloon_change_percent * guest.libvirt_curmem):
-        return True
-    else:
-        return False
+(def change_big_enough (guest new_val)
+{
+    (if (> (abs (- new_val guest.libvirt_curmem))
+           (* min_balloon_change_percent guest.libvirt_curmem))
+        1 0)
+})
 
-def shrink_guest(guest, *args):
-    global host_free_percent, pressure_critical, pressure_threshold, \
-           min_guest_free_percent
-    if host_free_percent <= pressure_critical:
+(def shrink_guest (guest)
+{
+    # Determine the degree of host memory pressure
+    (if (<= host_free_percent pressure_critical)
         # Pressure is critical:
-        #   Force guest to swap by making free memory negative 
-        guest_free_percent = -0.05 + host_free_percent
-    else:
+        #   Force guest to swap by making free memory negative
+        (defvar guest_free_percent (+ -0.05 host_free_percent))
         # Normal pressure situation
         #   Scale the guest free memory back according to host pressure
-        guest_free_percent = min_guest_free_percent * \
-            (host_free_percent / pressure_threshold)
+        (defvar guest_free_percent (* min_guest_free_percent
+                                    (/ host_free_percent pressure_threshold))))
+
     # Given current conditions, determine the ideal guest memory size
-    guest_used_mem = guest.StatAvg('libvirt_curmem') - guest.StatAvg('mem_unused')   
-    balloon_min = guest_used_mem + \
-        (guest_free_percent * guest.libvirt_maxmem)
+    (defvar guest_used_mem (- (guest.StatAvg "libvirt_curmem")
+                              (guest.StatAvg "mem_unused")))
+    (defvar balloon_min (+ guest_used_mem
+                           (* guest_free_percent guest.libvirt_maxmem)))
     # But do not change it too fast
-    balloon_size = guest.libvirt_curmem * \
-        (1 - max_balloon_change_percent)
-    if balloon_size < balloon_min:
-        balloon_size = balloon_min
+    (defvar balloon_size (* guest.libvirt_curmem
+                            (- 1 max_balloon_change_percent)))
+    (if (< balloon_size balloon_min)
+        (set balloon_size balloon_min)
+        0)
     # Set the new target for the BalloonController.  Only set it if the
     # value makes sense and is a large enough change to be worth it.   
-    if balloon_size <= guest.libvirt_maxmem and \
-            change_big_enough(guest, balloon_size):
-        guest.Control('balloon_target', balloon_size)
+    (if (and (<= balloon_size guest.libvirt_maxmem)
+            (change_big_enough guest balloon_size))
+        (guest.Control "balloon_target" balloon_size)
+        0)
+})
 
-def grow_guest(guest, *args):
+(def grow_guest (guest)
+{
     # There is only work to do if the guest is ballooned
-    if guest.libvirt_curmem < guest.libvirt_maxmem:
+    (if (< guest.libvirt_curmem guest.libvirt_maxmem) {
         # Minimally, increase so the guest has its desired free memory
-        guest_used_mem = guest.StatAvg('libvirt_curmem') - guest.StatAvg('mem_unused')
-        balloon_min = guest_used_mem + \
-            (min_guest_free_percent * guest.libvirt_maxmem)
+        (defvar guest_used_mem (- (guest.StatAvg "libvirt_curmem")
+                                  (guest.StatAvg "mem_unused")))
+        (defvar balloon_min (+ guest_used_mem (* min_guest_free_percent
+                                                 guest.libvirt_maxmem)))
         # Otherwise, increase according to the max balloon change
-        balloon_size = guest.libvirt_curmem * \
-            (1 + max_balloon_change_percent)
-        
+        (defvar balloon_size (* guest.libvirt_curmem
+                                (+ 1 max_balloon_change_percent)))
+
         # Determine the new target for the BalloonController.  Only set
         # if the value is a large enough for the change to be worth it. 
-        if balloon_size > guest.libvirt_maxmem:
-            balloon_size = guest.libvirt_maxmem
-        if balloon_size < balloon_min:
-            balloon_size = balloon_min
-        if change_big_enough(guest, balloon_size):
-            guest.Control('balloon_target', balloon_size)
-
+        (if (> balloon_size guest.libvirt_maxmem)
+            (set balloon_size guest.libvirt_maxmem) 0)
+        (if (< balloon_size balloon_min)
+            (set balloon_size balloon_min) 0)
+        (if (change_big_enough guest balloon_size)
+            (guest.Control "balloon_target" balloon_size) 0)
+    } 0)
+})
 
 ### Main script
 # Methodology: The goal is to shrink all guests fairly and by an amount
@@ -90,10 +94,7 @@ def grow_guest(guest, *args):
 # aggressively.  When the host is not under memory pressure, slowly
 # deflate the balloons.
 
-host_free_percent = Host.StatAvg('mem_free') / Host.mem_available
-if host_free_percent < pressure_threshold:
-    # We are under memory pressure
-    for_each_guest(shrink_guest)
-else:
-    # We are not under memory pressure
-    for_each_guest(grow_guest)
+(defvar host_free_percent (/ (Host.StatAvg "mem_free") Host.mem_available))
+(if (< host_free_percent pressure_threshold)
+    (with Guests guest (shrink_guest guest))
+    (with Guests guest (grow_guest guest)))

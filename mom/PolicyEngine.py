@@ -17,29 +17,38 @@
 import threading
 import time
 import logging
-from mom.Controllers import Rules
+from Policy.Policy import Policy
 
-class SystemController(threading.Thread):
+class PolicyEngine(threading.Thread):
     """
     At a regular interval, this thread triggers system reconfiguration by
-    sampling host and guest data, evaluating the rule set and reporting the
+    sampling host and guest data, evaluating the policy and reporting the
     results to all enabled Controller plugins.
     """
-    def __init__(self, config, rules, libvirt_iface, host_monitor, guest_manager):
-        threading.Thread.__init__(self, name="SystemController")
+    def __init__(self, config, policy_file, libvirt_iface, host_monitor, guest_manager):
+        threading.Thread.__init__(self, name="PolicyEngine")
         self.setDaemon(True)
         self.config = config
-        self.rules = rules
-        self.logger = logging.getLogger('mom.SystemController')
-        if rules is None:
-            self.logger.warn('%s: No rules were found.', self.getName())
+        self.policy_string = self.read_rules(policy_file)
+        self.logger = logging.getLogger('mom.PolicyEngine')
+        if self.policy_string == "":
+            self.logger.warn('%s: No policy specified.', self.getName())
+            self.policy_string = "0" # XXX: Parser should accept an empty program
         self.properties = {
             'libvirt_iface': libvirt_iface,
             'host_monitor': host_monitor,
             'guest_manager': guest_manager,
         }
         self.start()
-    
+
+    def read_rules(self, fname):
+        if fname is None or fname == "":
+            return ""
+        f = open(fname, 'r')
+        str = f.read()
+        f.close()
+        return str
+
     def get_controllers(self):
         """
         Initialize the Controllers called for in the config file.
@@ -66,19 +75,20 @@ class SystemController(threading.Thread):
         host = self.properties['host_monitor'].interrogate()
         if host is None:
             return
-        guest_list = self.properties['guest_manager'].interrogate()
-        if Rules.evaluate(self.rules, host, guest_list) is False:
+        guest_list = self.properties['guest_manager'].interrogate().values()
+        if self.policy.evaluate(host, guest_list) is False:
             return
         for c in self.controllers:
             c.process(host, guest_list)
 
     def run(self):
-        self.logger.info("System Controller starting")
+        self.logger.info("Policy Engine starting")
+        if self.policy_string is not None:
+            self.policy = Policy(self.policy_string)
         self.get_controllers()
-        interval = self.config.getint('main', 'system-controller-interval')
+        interval = self.config.getint('main', 'policy-engine-interval')
         while self.config.getint('main', 'running') == 1:
             time.sleep(interval)
             self.do_controls()
-        self.logger.info("System Controller ending")
-
+        self.logger.info("Policy Engine ending")
 

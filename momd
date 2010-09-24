@@ -27,8 +27,7 @@ import logging.handlers
 from mom.libvirtInterface import libvirtInterface
 from mom.HostMonitor import HostMonitor
 from mom.GuestManager import GuestManager
-from mom.Controllers.SystemController import SystemController
-from mom.Controllers.Rules import read_rules
+from mom.PolicyEngine import PolicyEngine
 
 config = None
 def read_config(fname, options):
@@ -40,7 +39,7 @@ def read_config(fname, options):
     config.set('main', 'host-monitor-interval', '5')
     config.set('main', 'guest-manager-interval', '5')
     config.set('main', 'guest-monitor-interval', '5')
-    config.set('main', 'system-controller-interval', '10')
+    config.set('main', 'policy-engine-interval', '10')
     config.set('main', 'sample-history-length', '10')
     config.set('main', 'libvirt-hypervisor-uri', '')
     config.set('main', 'controllers', 'Balloon')
@@ -178,7 +177,6 @@ def main():
     read_config(options.config_file, options)
     configure_logger(config)
     logger = logging.getLogger('mom')
-    rules = read_rules(options.rules_file)
 
     signal.signal(signal.SIGINT, signal_quit)
     signal.signal(signal.SIGTERM, signal_quit)
@@ -192,16 +190,16 @@ def main():
     config.set('main', 'running', '1')
     host_monitor = HostMonitor(config)
     guest_manager = GuestManager(config, libvirt_iface)
-    system_controller = SystemController(config, rules, libvirt_iface, \
-                            host_monitor, guest_manager)
+    policy_engine = PolicyEngine(config, options.rules_file, libvirt_iface, \
+                        host_monitor, guest_manager)
 
     interval = config.getint('main', 'main-loop-interval')
     while config.getint('main', 'running') == 1:
         time.sleep(interval)
-        if not threads_ok((host_monitor,guest_manager,system_controller)):
+        if not threads_ok((host_monitor,guest_manager,policy_engine)):
             config.set('main', 'running', '0')
 
-    wait_for_thread(system_controller, 10)
+    wait_for_thread(policy_engine, 10)
     wait_for_thread(guest_manager, 5)
     wait_for_thread(host_monitor, 5)
     logger.info("Daemon ending")
