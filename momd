@@ -19,6 +19,7 @@ import sys
 import signal
 import time
 import os
+import atexit
 import re
 from optparse import OptionParser
 import ConfigParser
@@ -28,6 +29,53 @@ from mom.libvirtInterface import libvirtInterface
 from mom.HostMonitor import HostMonitor
 from mom.GuestManager import GuestManager
 from mom.PolicyEngine import PolicyEngine
+
+def daemonize(config):
+    try:
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)
+    except OSError, e:
+        sys.stderr.write("momd: fork failed: %d (%s)\n" % (e.errno, e.strerror))
+        sys.exit(1)
+    
+    os.chdir("/")
+    os.setsid()
+    os.umask(0)
+    
+    try:
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)
+    except OSError, e:
+        sys.stderr.write("momd: fork failed: %d (%s)\n" % (e.errno, e.strerror))
+        sys.exit(1)
+    
+    pid_file = config.get('main', 'pid-file')
+    pid = str(os.getpid())
+    try:
+        file(pid_file,'w+').write("%s\n" % pid)
+    except EnvironmentError, e:
+        sys.stderr.write("momd: failed to write pid file: %d (%s)\n" % 
+                         (e.errno, e.strerror))
+        sys.exit(1)
+    atexit.register(delpid, pid_file)
+    
+    sys.stdout.flush()
+    sys.stderr.flush()
+    si = file('/dev/null', 'r')
+    so = file('/dev/null', 'a+')
+    se = file('/dev/null', 'a+', 0)
+    os.dup2(si.fileno(), sys.stdin.fileno())
+    os.dup2(so.fileno(), sys.stdout.fileno())
+    os.dup2(se.fileno(), sys.stderr.fileno())
+    
+def delpid(pid_file):
+    try:
+        os.remove(pid_file)
+    except OSError, e:
+        logger = logging.getLogger('mom')
+        logger.error("Unable to remove pid file (%s): %s", pid_file, e.strerror)
 
 config = None
 def read_config(fname, options):
@@ -44,6 +92,7 @@ def read_config(fname, options):
     config.set('main', 'libvirt-hypervisor-uri', '')
     config.set('main', 'controllers', 'Balloon')
     config.set('main', 'plot-dir', '')
+    config.set('main', 'pid-file', '/var/run/momd.pid')
     config.add_section('logging')
     config.set('logging', 'log', 'stdio')
     config.set('logging', 'verbosity', 'info')
@@ -58,6 +107,8 @@ def read_config(fname, options):
     # Process command line overrides
     if options.plot_dir is not None:
         config.set('main', 'plot-dir', options.plot_dir)
+    if options.pid_file is not None:
+        config.set('main', 'pid-file', options.pid_file)
     if options.log is not None:
         config.set('logging', 'log', options.log)
     if options.verbosity is not None:
@@ -172,9 +223,14 @@ def main():
                        help='Set the log to TARGET (stdout, or <file>')
     cmdline.add_option('-v', '--verbose', dest='verbosity', metavar='LEVEL',
                        help='Set logging verbosity to LEVEL (0-4)')
+    cmdline.add_option('-d', '--daemon', action='store_true', dest='daemonize')
+    cmdline.add_option('', '--pid-file', dest='pid_file', metavar='FILE',
+                       help='When running as a daemon, write pid to FILE')
     
     (options, args) = cmdline.parse_args()
     read_config(options.config_file, options)
+    if options.daemonize:
+        daemonize(config)
     configure_logger(config)
     logger = logging.getLogger('mom')
 
