@@ -2,14 +2,14 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
 Name:		mom           
-Version:        0.2
+Version:        0.2.1
 Release:        1%{?dist}
 Summary:        Dynamically manage system resources on virtualization hosts
 
 Group:          Applications/System
 License:        GPLv2
 URL:            http://wiki.github.com/aglitke/mom
-Source0:        http://github.com/downloads/aglitke/mom/mom-0.2.tar.gz
+Source0:        http://github.com/downloads/aglitke/mom/mom-0.2.1.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python-devel
 Requires:	libvirt, libvirt-python
@@ -77,5 +77,5 @@ fi
 
 
 %changelog
-* Mon Sep 27 2010 Adam Litke <agl@us.ibm.com> - 0.2-1
+* Mon Sep 27 2010 Adam Litke <agl@us.ibm.com> - 0.2.1
 - Initial package
