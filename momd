@@ -117,9 +117,13 @@ def read_config(fname, options):
         config.set('logging', 'verbosity', options.verbosity)
 
     # Add non-customizable thread-global variables
-    config.set('main', 'running', '0')
+    # The supplied config file must not contain a '__int__' section
+    if config.has_section('__int__'):
+        config.remove_section('__int__')
+    config.add_section('__int__')
+    config.set('__int__', 'running', '0')
     plot_subdir = get_plot_subdir(config.get('main', 'plot-dir'))
-    config.set('main', 'plot-subdir', plot_subdir)
+    config.set('__int__', 'plot-subdir', plot_subdir)
 
 def configure_logger(config):    
     logger = logging.getLogger()
@@ -192,7 +196,7 @@ def signal_quit(signum, frame):
     global config
     logger = logging.getLogger('mom')
     logger.info("Received signal %i shutting down.", signum)
-    config.set('main', 'running', '0')
+    config.set('__int__', 'running', '0')
 
 def threads_ok(threads):
     """
@@ -245,7 +249,7 @@ def main():
 
     # Start threads
     logger.debug("Daemon starting")
-    config.set('main', 'running', '1')
+    config.set('__int__', 'running', '1')
     host_monitor = HostMonitor(config)
     guest_manager = GuestManager(config, libvirt_iface)
     policy_engine = PolicyEngine(config, options.rules_file, libvirt_iface, \
@@ -253,10 +257,10 @@ def main():
     rpc_server = RPCServer(config, host_monitor, guest_manager, policy_engine)
 
     interval = config.getint('main', 'main-loop-interval')
-    while config.getint('main', 'running') == 1:
+    while config.getint('__int__', 'running') == 1:
         time.sleep(interval)
         if not threads_ok((host_monitor,guest_manager,policy_engine,rpc_server)):
-            config.set('main', 'running', '0')
+            config.set('__int__', 'running', '0')
 
     rpc_server.shutdown()
     wait_for_thread(rpc_server, 5)

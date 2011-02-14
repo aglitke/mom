@@ -40,7 +40,7 @@ class Monitor:
         self.collectors = []
         self.logger = logging.getLogger('mom.Monitor')
         
-        plot_dir = config.get('main', 'plot-subdir')
+        plot_dir = config.get('__int__', 'plot-subdir')
         if plot_dir != '':
             self.plotter = Plotter(plot_dir, name)
         else:
@@ -154,7 +154,7 @@ class Monitor:
         """
         Private helper to determine if the Monitor should continue to run.
         """
-        if self.config.getint('main', 'running') == 1 and not self._terminate:
+        if self.config.getint('__int__', 'running') == 1 and not self._terminate:
             return True
         else:
             return False

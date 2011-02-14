@@ -87,7 +87,7 @@ class PolicyEngine(threading.Thread):
             self.policy = Policy(self.policy_string)
         self.get_controllers()
         interval = self.config.getint('main', 'policy-engine-interval')
-        while self.config.getint('main', 'running') == 1:
+        while self.config.getint('__int__', 'running') == 1:
             time.sleep(interval)
             self.do_controls()
         self.logger.info("Policy Engine ending")

@@ -23,7 +23,8 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 
 class MOMFuncs(object):
-    def __init__(self, threads):
+    def __init__(self, config, threads):
+        self.config = config
         self.threads = threads
         self.logger = logging.getLogger('mom.RPCServer')
 
@@ -59,7 +60,7 @@ class RPCServer(threading.Thread):
         self.server = SimpleXMLRPCServer(("localhost", port),
                             requestHandler=RequestHandler, logRequests=0)
         self.server.register_introspection_functions()
-        self.server.register_instance(MOMFuncs(self.threads))
+        self.server.register_instance(MOMFuncs(self.config, self.threads))
     
     def shutdown(self):
         if self.server is not None:

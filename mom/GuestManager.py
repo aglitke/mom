@@ -105,7 +105,7 @@ class GuestManager(threading.Thread):
     def run(self):
         self.logger.info("Guest Manager starting");
         interval = self.config.getint('main', 'guest-manager-interval')
-        while self.config.getint('main', 'running') == 1:
+        while self.config.getint('__int__', 'running') == 1:
             domain_list = self.libvirt_iface.listDomainsID()
             if domain_list is not None:
                 self.spawn_guest_monitors(domain_list)
