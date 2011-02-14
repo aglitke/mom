@@ -29,6 +29,7 @@ from mom.libvirtInterface import libvirtInterface
 from mom.HostMonitor import HostMonitor
 from mom.GuestManager import GuestManager
 from mom.PolicyEngine import PolicyEngine
+from mom.RPCServer import RPCServer
 
 def daemonize(config):
     try:
@@ -93,6 +94,7 @@ def read_config(fname, options):
     config.set('main', 'controllers', 'Balloon')
     config.set('main', 'plot-dir', '')
     config.set('main', 'pid-file', '/var/run/momd.pid')
+    config.set('main', 'rpc-port', '-1')
     config.add_section('logging')
     config.set('logging', 'log', 'stdio')
     config.set('logging', 'verbosity', 'info')
@@ -248,13 +250,16 @@ def main():
     guest_manager = GuestManager(config, libvirt_iface)
     policy_engine = PolicyEngine(config, options.rules_file, libvirt_iface, \
                         host_monitor, guest_manager)
+    rpc_server = RPCServer(config, host_monitor, guest_manager, policy_engine)
 
     interval = config.getint('main', 'main-loop-interval')
     while config.getint('main', 'running') == 1:
         time.sleep(interval)
-        if not threads_ok((host_monitor,guest_manager,policy_engine)):
+        if not threads_ok((host_monitor,guest_manager,policy_engine,rpc_server)):
             config.set('main', 'running', '0')
 
+    rpc_server.shutdown()
+    wait_for_thread(rpc_server, 5)
     wait_for_thread(policy_engine, 10)
     wait_for_thread(guest_manager, 5)
     wait_for_thread(host_monitor, 5)
