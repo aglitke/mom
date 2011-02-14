@@ -31,6 +31,15 @@ class MOMFuncs(object):
     def ping(self):
         self.logger.info("ping()")
         return True
+        
+    def setPolicy(self, policy):
+        self.logger.info("setPolicy()")
+        self.logger.debug("New Policy:\n %s", policy)
+        return self.threads['policy_engine'].rpc_set_policy(policy)
+        
+    def getPolicy(self):
+        self.logger.info("getPolicy()")
+        return self.threads['policy_engine'].rpc_get_policy()
 
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/RPC2',)

@@ -22,7 +22,10 @@ class Policy:
         self.policy_string = policy_string
         self.evaluator = Evaluator()
         self.code = get_code(self.evaluator, self.policy_string)
-        
+
+    def get_string(self):
+        return self.policy_string
+
     def evaluate(self, host, guest_list):
         results = []
         self.evaluator.stack.set('Host', host, alloc=True)

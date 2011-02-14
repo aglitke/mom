@@ -25,6 +25,16 @@ def ping(mom):
     if mom.ping():
         print "OK"
 
+def getPolicy(mom):
+    print mom.getPolicy()
+    
+def setPolicy(mom, fname):
+    f = open(fname, 'r')
+    policy = f.read()
+    f.close()
+    if not mom.setPolicy(policy):
+        print "Failed to set policy! Check the syntax."
+
 def usage(parser):
     parser.usageExit()
 
@@ -39,6 +49,10 @@ def main():
                        "Select one of these commands to execute")
     cmds.add_option('--ping', dest='cmd', action='append_const', const='ping',
                     help='(No arguments) Ping the MOM RPC Server')
+    cmds.add_option('--get-policy', dest='cmd', action='append_const',
+                    const='get_policy', help='(No arguments) Print the currently active MOM policy')
+    cmds.add_option('--set-policy', dest='cmd', action='append_const',
+                    const='set_policy', help='(FILE) Set new MOM policy from FILE')
     parser.add_option_group(cmds)
     (options, args) = parser.parse_args()
 
@@ -49,6 +63,12 @@ def main():
     try:
         if options.cmd[0] == 'ping':
             ping(mom)
+        elif options.cmd[0] == 'get_policy':
+            getPolicy(mom)
+        elif options.cmd[0] == 'set_policy':
+            if len(args) != 1:
+                parser.error("A filename must follow --set-policy")
+            setPolicy(mom, args[0])
     except Exception, e:
         print "Command '%s' failed: %s" % (options.cmd[0], e)
         sys.exit(1)

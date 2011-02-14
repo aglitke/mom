@@ -29,11 +29,9 @@ class PolicyEngine(threading.Thread):
         threading.Thread.__init__(self, name="PolicyEngine")
         self.setDaemon(True)
         self.config = config
-        self.policy_string = self.read_rules(policy_file)
         self.logger = logging.getLogger('mom.PolicyEngine')
-        if self.policy_string == "":
-            self.logger.warn('%s: No policy specified.', self.getName())
-            self.policy_string = "0" # XXX: Parser should accept an empty program
+        self.policy_sem = threading.Semaphore()
+        self.load_policy(self.read_rules(policy_file))
         self.properties = {
             'libvirt_iface': libvirt_iface,
             'host_monitor': host_monitor,
@@ -48,6 +46,33 @@ class PolicyEngine(threading.Thread):
         str = f.read()
         f.close()
         return str
+
+    def load_policy(self, str):
+        ret = True
+        if str is None or str == "":
+            self.logger.warn('%s: No policy specified.', self.getName())
+            str = "0" # XXX: Parser should accept an empty program
+
+        try:
+            new_pol = Policy(str)
+        except:
+            return False
+        self.policy_sem.acquire()
+        self.policy = new_pol
+        self.policy_sem.release()
+        return True
+
+    def rpc_get_policy(self):
+        self.policy_sem.acquire()
+        if self.policy is not None:
+            str = self.policy.get_string()
+        else:
+            str = ""
+        self.policy_sem.release()
+        return str
+
+    def rpc_set_policy(self, str):
+        return self.load_policy(str)
 
     def get_controllers(self):
         """
@@ -76,15 +101,17 @@ class PolicyEngine(threading.Thread):
         if host is None:
             return
         guest_list = self.properties['guest_manager'].interrogate().values()
-        if self.policy.evaluate(host, guest_list) is False:
+        
+        self.policy_sem.acquire()
+        ret = self.policy.evaluate(host, guest_list)            
+        self.policy_sem.release()
+        if ret is False:
             return
         for c in self.controllers:
             c.process(host, guest_list)
 
     def run(self):
         self.logger.info("Policy Engine starting")
-        if self.policy_string is not None:
-            self.policy = Policy(self.policy_string)
         self.get_controllers()
         interval = self.config.getint('main', 'policy-engine-interval')
         while self.config.getint('__int__', 'running') == 1:
