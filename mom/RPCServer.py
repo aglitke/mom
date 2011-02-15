@@ -18,9 +18,10 @@ import threading
 import ConfigParser
 import time
 import logging
-
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+
+from LogUtils import *
 
 class MOMFuncs(object):
     def __init__(self, config, threads):
@@ -40,6 +41,12 @@ class MOMFuncs(object):
     def getPolicy(self):
         self.logger.info("getPolicy()")
         return self.threads['policy_engine'].rpc_get_policy()
+        
+    def setVerbosity(self, verbosity):
+        self.logger.info("setVerbosity()")
+        logger = logging.getLogger()
+        log_set_verbosity(logger, verbosity)
+        return True
 
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/RPC2',)

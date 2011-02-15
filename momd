@@ -25,6 +25,7 @@ from optparse import OptionParser
 import ConfigParser
 import logging
 import logging.handlers
+from mom.LogUtils import *
 from mom.libvirtInterface import libvirtInterface
 from mom.HostMonitor import HostMonitor
 from mom.GuestManager import GuestManager
@@ -129,19 +130,7 @@ def configure_logger(config):
     logger = logging.getLogger()
     
     verbosity = config.get('logging', 'verbosity').lower()
-    if verbosity == '5' or verbosity == 'debug':
-        level = logging.DEBUG
-    elif verbosity == '4' or verbosity == 'info':
-        level = logging.INFO
-    elif verbosity == '3' or verbosity == 'warn':
-        level = logging.WARN
-    elif verbosity == '2' or verbosity == 'error':
-        level = logging.ERROR
-    elif verbosity == '1' or verbosity == 'critical':
-        level = logging.CRITICAL
-    else:
-        level = logging.DEBUG
-    logger.setLevel(level)
+    level = log_set_verbosity(logger, verbosity)
 
     log = config.get('logging', 'log')
     if log.lower() == 'stdio':
