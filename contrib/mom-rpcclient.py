@@ -42,6 +42,21 @@ def setVerbosity(mom, verbosity):
         return False
     mom.setVerbosity(verbosity)
 
+def _print_stats(stats):
+    f_max = reduce(lambda x, y: max(x, len(y)), stats.keys(), 0)
+    for (key, val) in stats.items():
+        pad = f_max - len(key)
+        print "%s:%s %s" % (key, ' '*pad, val)
+
+def getStatistics(mom):
+    stats = mom.getStatistics()
+    
+    print "Host:\n====="
+    _print_stats(stats['host'])
+    for (key, val) in stats['guests'].items():
+        print "\nGuest %s:\n=======%s" % (key, len(key)*'=')
+        _print_stats(val)
+
 def usage(parser):
     parser.usageExit()
 
@@ -62,6 +77,8 @@ def main():
                     const='set_policy', help='(FILE) Set new MOM policy from FILE')
     cmds.add_option('--set-verbosity', dest='cmd', action='append_const',
                     const='set_verbosity', help='(LEVEL) Set verbosity to LEVEL')
+    cmds.add_option('--get-statistics', dest='cmd', action='append_const',
+                    const='get_statistics', help='(No arguments) Get the latest host and guest statistics')
     parser.add_option_group(cmds)
     (options, args) = parser.parse_args()
 
@@ -82,6 +99,8 @@ def main():
             if len(args) != 1:
                 parser.error("A level must follow --set-verbosity")
             setVerbosity(mom, args[0])
+        elif options.cmd[0] == 'get_statistics':
+            getStatistics(mom)
     except Exception, e:
         print "Command '%s' failed: %s" % (options.cmd[0], e)
         sys.exit(1)

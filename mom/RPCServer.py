@@ -48,6 +48,15 @@ class MOMFuncs(object):
         log_set_verbosity(logger, verbosity)
         return True
 
+    def getStatistics(self):
+        host_stats = self.threads['host_monitor'].interrogate().statistics[0]
+        guest_stats = {}
+        guest_entities = self.threads['guest_manager'].interrogate().values()
+        for entity in guest_entities:
+            guest_stats[entity.properties['name']] = entity.statistics[0]
+        ret = { 'host': host_stats, 'guests': guest_stats }
+        return ret
+
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/RPC2',)
 
