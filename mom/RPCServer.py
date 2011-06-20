@@ -76,9 +76,11 @@ class RPCServer(threading.Thread):
         self.start()
     
     def create_server(self):
+        self.server = None
         try:
             port = self.config.getint('main', 'rpc-port')
         except ValueError:
+            self.logger.error("Unable to parse 'rpc-port' configuration setting")
             return None
         if port is None or port < 0:
             return None
