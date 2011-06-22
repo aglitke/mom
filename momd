@@ -248,7 +248,11 @@ def main():
     interval = config.getint('main', 'main-loop-interval')
     while config.getint('__int__', 'running') == 1:
         time.sleep(interval)
-        if not threads_ok((host_monitor,guest_manager,policy_engine,rpc_server)):
+        if not threads_ok((host_monitor,guest_manager,policy_engine)):
+            config.set('__int__', 'running', '0')
+        # Check the RPC server separately from the other threads since it
+        # can be disabled.
+        if not rpc_server.thread_ok():
             config.set('__int__', 'running', '0')
 
     rpc_server.shutdown()

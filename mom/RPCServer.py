@@ -73,10 +73,15 @@ class RPCServer(threading.Thread):
                          'guest_manager': guest_manager,
                          'policy_engine': policy_engine }
         self.logger = logging.getLogger('mom.RPCServer')
+        self.server = None
         self.start()
+
+    def thread_ok(self):
+        if self.server is None:
+            return True
+        return self.isAlive()
     
     def create_server(self):
-        self.server = None
         try:
             port = self.config.getint('main', 'rpc-port')
         except ValueError:
