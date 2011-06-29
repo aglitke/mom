@@ -35,14 +35,18 @@ def sock_send(conn, msg):
             raise socket.error("Unable to send on socket")
         sent = sent + ret
 
-def sock_receive(conn):
+def sock_receive(conn, logger=None):
     """
     Receive a '\n' terminated message via a socket connection.
     """
     msg = ""
     done = False
+    if logger:
+        logger.debug('sock_receive(%s)' % conn)
     while not done:
         chunk = conn.recv(4096)
+        if logger:
+            logger.debug("sock_receive: received next chunk: %s" % repr(chunk))        
         if chunk == '':
             done = True
         msg = msg + chunk
@@ -78,6 +82,7 @@ class GuestNetworkDaemon(Collector):
         self.socket = None
         self.name = properties['name']
         self.state = 'ok'
+        self.logger = logging.getLogger('mom.Collectors.GuestNetworkDaemon')
 
     def connect(self):
         try:
@@ -102,7 +107,7 @@ class GuestNetworkDaemon(Collector):
             self.connect()
         try:
             sock_send(self.socket, "stats")
-            data = sock_receive(self.socket)
+            data = sock_receive(self.socket, self.logger)
         except socket.error, msg:
             sock_close(self.socket)
             self.socket = None
