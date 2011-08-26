@@ -57,6 +57,11 @@ def getStatistics(mom):
         print "\nGuest %s:\n=======%s" % (key, len(key)*'=')
         _print_stats(val)
 
+def getActiveGuests(mom):
+    guests = mom.getActiveGuests()
+    for guest in guests:
+        print guest
+
 def usage(parser):
     parser.usageExit()
 
@@ -79,6 +84,8 @@ def main():
                     const='set_verbosity', help='(LEVEL) Set verbosity to LEVEL')
     cmds.add_option('--get-statistics', dest='cmd', action='append_const',
                     const='get_statistics', help='(No arguments) Get the latest host and guest statistics')
+    cmds.add_option('--get-active-guests', dest='cmd', action='append_const',
+                    const='get_active_guests', help='(No arguments) Get a list of guests that are being actively managed')
     parser.add_option_group(cmds)
     (options, args) = parser.parse_args()
 
@@ -101,6 +108,8 @@ def main():
             setVerbosity(mom, args[0])
         elif options.cmd[0] == 'get_statistics':
             getStatistics(mom)
+        elif options.cmd[0] == 'get_active_guests':
+            getActiveGuests(mom)
     except Exception, e:
         print "Command '%s' failed: %s" % (options.cmd[0], e)
         sys.exit(1)

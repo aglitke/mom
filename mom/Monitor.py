@@ -133,6 +133,12 @@ class Monitor:
         Instruct the Monitor to shut down
         """
         self._terminate = True
+
+    def isReady(self):
+        """
+        Check if all configured Collectors are working properly.
+        """
+        return bool(self.ready)
         
     def _set_ready(self):
         if self.ready is not True:

@@ -57,6 +57,10 @@ class MOMFuncs(object):
         ret = { 'host': host_stats, 'guests': guest_stats }
         return ret
 
+    def getActiveGuests(self):
+        self.logger.info("getActiveGuests()")
+        return self.threads['guest_manager'].rpc_get_active_guests()
+
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/RPC2',)
 

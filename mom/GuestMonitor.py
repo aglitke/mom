@@ -126,3 +126,12 @@ class GuestMonitor(Monitor, threading.Thread):
             ip = matches[0]
             self.logger.debug("Guest %s has IP address %s", name, ip)
             return ip
+
+    def getGuestName(self):
+        """
+        Provide structured access to the guest name without calling libvirt.
+        """
+        try:
+            return self.properties['name']
+        except KeyError:
+            return None

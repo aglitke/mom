@@ -113,3 +113,14 @@ class GuestManager(threading.Thread):
             time.sleep(interval)
         self.wait_for_guest_monitors()
         self.logger.info("Guest Manager ending")
+
+    def rpc_get_active_guests(self):
+        ret = []
+        self.guests_sem.acquire()
+        for (id, monitor) in self.guests.items():
+            if monitor.isReady():
+                name = monitor.getGuestName()
+                if name is not None:
+                    ret.append(name)
+        self.guests_sem.release()
+        return ret
