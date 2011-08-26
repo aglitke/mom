@@ -34,7 +34,7 @@ class HostMonitor(Monitor, threading.Thread):
         self.logger = logging.getLogger('mom.HostMonitor')
         collector_list = self.config.get('host', 'collectors')
         self.collectors = Collector.get_collectors(collector_list,
-                            self.properties)
+                            self.properties, self.config)
         if self.collectors is None:
             self.logger.error("Host Monitor initialization failed")
             return

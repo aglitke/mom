@@ -51,7 +51,7 @@ class GuestMonitor(Monitor, threading.Thread):
         self.data_sem.release()
         collector_list = self.config.get('guest', 'collectors')
         self.collectors = Collector.get_collectors(collector_list,
-                            self.properties)
+                            self.properties, self.config)
         if self.collectors is None:
             self.logger.error("Guest Monitor initialization failed")
             return

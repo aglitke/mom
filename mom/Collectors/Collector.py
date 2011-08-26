@@ -58,17 +58,30 @@ class Collector:
         """
         return Collector(properties)
 
-def get_collectors(config_str, properties):
+def get_collectors(config_str, properties, global_config):
     """
     Initialize a set of new Collector instances for a Monitor.
     Return: A list of initialized Collectors
     """
     logger = logging.getLogger('mom.Collector')
     collectors = []
+    
+    # Make sure we don't clobber an existing entry in the properties dict
+    if 'config' in properties:
+        logger.error("Internal Error: 'config' not allowed in Monitor properties")
+        return None
+    
     for name in config_str.split(','):
         name = name.lstrip()
         if name == '':
             continue
+        
+        # Check for Collector-specific configuration in the global config
+        section = "Collector: %s" % name
+        if global_config.has_section(section):
+            properties['config'] = dict(global_config.items(section))
+
+        # Create an instance
         try:
             module = __import__('mom.Collectors.' + name, None, None, name)
             collectors.append(module.instance(properties))
