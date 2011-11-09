@@ -31,23 +31,30 @@ class PolicyEngine(threading.Thread):
         self.config = config
         self.logger = logging.getLogger('mom.PolicyEngine')
         self.policy_sem = threading.Semaphore()
-
-        policy = self.config.get('main', 'policy')
-        self.load_policy(self.read_rules(policy))
-
         self.properties = {
             'libvirt_iface': libvirt_iface,
             'host_monitor': host_monitor,
             'guest_manager': guest_manager,
         }
+
+        policy_file = self.config.get('main', 'policy')
+        policy_str = self.read_rules(policy_file)
+        if policy_str is None:
+            self.logger.error("Policy Engine initialization failed")
+            return
+        self.load_policy(policy_str)
         self.start()
 
     def read_rules(self, fname):
         if fname is None or fname == "":
             return ""
-        f = open(fname, 'r')
-        str = f.read()
-        f.close()
+        try:
+            f = open(fname, 'r')
+            str = f.read()
+            f.close()
+        except IOError, e:
+            self.logger.error("Unable to read policy file: %s" % e)
+            return None
         return str
 
     def load_policy(self, str):
