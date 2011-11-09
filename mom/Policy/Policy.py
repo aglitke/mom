@@ -14,11 +14,14 @@
 # License along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
+import logging
 from Parser import Evaluator
 from Parser import get_code
+from Parser import PolicyError
 
 class Policy:
     def __init__(self, policy_string):
+        self.logger = logging.getLogger('mom.Policy')
         self.policy_string = policy_string
         self.evaluator = Evaluator()
         self.code = get_code(self.evaluator, self.policy_string)
@@ -34,8 +37,11 @@ class Policy:
         try:
             for expr in self.code:
                 results.append(self.evaluator.eval(expr))
-            print "Results: %s" % results
+            self.logger.debug("Results: %s" % results)
+        except PolicyError as e:
+            self.logger.error("Policy error: %s" % e)
+            return False
         except Exception as e:
-            print "Exception when processing rules: %s" % e
+            self.logger.error("Unexpected error when evaluating policy: %s" % e)
             return False
         return True

@@ -250,5 +250,17 @@ class TestEval(unittest.TestCase):
                              "This guest's name is Guest-2",
                              "This guest's name is Guest-4" ] ])
 
+    def test_syntax_error(self):
+        pol = """
+        (+ 2 2
+        """
+        self.assertRaises(Parser.PolicyError, Parser.eval, self.e, pol)
+        
+    def test_parse_error(self):
+        pol = """
+        (2 + 2)
+        """
+        self.assertRaises(Parser.PolicyError, Parser.eval, self.e, pol)
+
 if __name__ == '__main__':
     unittest.main()

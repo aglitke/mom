@@ -17,7 +17,7 @@
 import threading
 import time
 import logging
-from Policy.Policy import Policy
+from Policy.Policy import Policy, PolicyError
 
 class PolicyEngine(threading.Thread):
     """
@@ -39,10 +39,9 @@ class PolicyEngine(threading.Thread):
 
         policy_file = self.config.get('main', 'policy')
         policy_str = self.read_rules(policy_file)
-        if policy_str is None:
+        if policy_str is None or not self.load_policy(policy_str):
             self.logger.error("Policy Engine initialization failed")
             return
-        self.load_policy(policy_str)
         self.start()
 
     def read_rules(self, fname):
@@ -65,7 +64,8 @@ class PolicyEngine(threading.Thread):
 
         try:
             new_pol = Policy(str)
-        except:
+        except PolicyError as e:
+            self.logger.warn("Unable to load policy: %s" % e)
             return False
         self.policy_sem.acquire()
         self.policy = new_pol

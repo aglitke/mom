@@ -17,6 +17,8 @@
 import re
 from spark import GenericScanner, GenericParser
 
+class PolicyError(Exception): pass
+
 class Token(object):
     def __init__(self, kind, value=None):
         self.kind = kind
@@ -201,13 +203,13 @@ class GenericEvaluator(object):
         else:
             types = self.parse_doc(doc)
             if len(types) != len(args):
-                raise Exception('arity mismatch in doc parsing')
+                raise PolicyError('arity mismatch in doc parsing')
             for i in range(len(types)):
                 if types[i].value == 'code':
                     continue
                 elif types[i].value == 'symbol':
                     if not isinstance(args[i], Token) or args[i].kind != 'symbol':
-                        raise Exception('malformed expression')
+                        raise PolicyError('malformed expression')
                     args[i] = args[i].value
                 else:
                     args[i] = self.eval(args[i])
@@ -222,19 +224,19 @@ class GenericEvaluator(object):
             elif code.kind == 'symbol':
                 return self.eval_symbol(code.value)
             else:
-                raise Exception('Unexpected token type "%s"' % code.kind)
+                raise PolicyError('Unexpected token type "%s"' % code.kind)
 
         node = code[0]
         if not isinstance(node, Token):
             print code
-            raise Exception('Expected simple token as arg 1')
+            raise PolicyError('Expected simple token as arg 1')
 
         if node.kind == 'symbol':
             name = node.value
         elif node.kind == 'operator':
             name = self.operator_map[node.value]
         else:
-            raise Exception('Unexpected token type in arg 1 "%s"' % node.kind)
+            raise PolicyError('Unexpected token type in arg 1 "%s"' % node.kind)
 
         func = self.stack.get(name, allow_undefined=True)
         if func is not None:
@@ -245,7 +247,7 @@ class GenericEvaluator(object):
         elif hasattr(self, "default"):
             return self.default(name, code[1:])
         else:
-            raise Exception('Unknown function "%s" with no default handler' % name)
+            raise PolicyError('Unknown function "%s" with no default handler' % name)
 
 class VariableStack(object):
     def __init__(self):
@@ -270,7 +272,7 @@ class VariableStack(object):
                     return scope[obj]
         if allow_undefined:
             return None
-        raise Exception("undefined symbol %s" % name)
+        raise PolicyError("undefined symbol %s" % name)
 
     def set(self, name, value, alloc=False):
         if alloc:
@@ -282,7 +284,7 @@ class VariableStack(object):
                 scope[name] = value
                 return value
 
-        raise Exception("undefined symbol %s" % name)
+        raise PolicyError("undefined symbol %s" % name)
 
 class Evaluator(GenericEvaluator):
     operator_map = {'+': 'add', '-': 'sub',
@@ -314,7 +316,7 @@ class Evaluator(GenericEvaluator):
         elif token.type in ('integer', 'hex', 'octal'):
             return int(token.value, 0)
         else:
-            raise Exception("Unsupported numeric type for token: %s" % token)
+            raise PolicyError("Unsupported numeric type for token: %s" % token)
 
     def default(self, name, args):
         if name == 'eval':
@@ -322,7 +324,7 @@ class Evaluator(GenericEvaluator):
 
         params, code = self.funcs[name]
         if len(params) != len(args):
-            raise Exception('Function "%s" invoked with incorrect arity' % name)
+            raise PolicyError('Function "%s" invoked with incorrect arity' % name)
 
         scope = []
         for i in range(len(params)):
@@ -346,15 +348,15 @@ class Evaluator(GenericEvaluator):
     def c_let(self, syms, code):
         'code code'
         if type(syms) != list:
-            raise Exception('Expecting list as arg 1 in let')
+            raise PolicyError('Expecting list as arg 1 in let')
 
         self.stack.enter_scope()
         for sym in syms:
             if type(sym) != list or len(sym) != 2:
-                raise Exception('Expecting list of tuples in arg1 of let')
+                raise PolicyError('Expecting list of tuples in arg1 of let')
             name, value = sym
             if name.kind != 'symbol':
-                raise Exception('Expecting list of (symbol value) in let')
+                raise PolicyError('Expecting list of (symbol value) in let')
             self.stack.set(name.value, self.eval(value), True)
         result = self.eval(code)
         self.stack.leave_scope()
@@ -365,7 +367,7 @@ class Evaluator(GenericEvaluator):
         
         # Iteration is restricted to the list of Guest entities
         if iterable != 'Guests':
-            raise Exception("Unexpected iterable '%s' in with statement" %
+            raise PolicyError("Unexpected iterable '%s' in with statement" %
                                 iterable)
         list = self.stack.get(iterable)
         result = []
@@ -430,10 +432,13 @@ class Evaluator(GenericEvaluator):
         return not x
 
 def get_code(e, string):
-    scanner = Scanner(e.get_operators())
-    tokens = scanner.tokenize(string)
-    parser = Parser(start='value_list')
-    return parser.parse(tokens)
+    try:
+        scanner = Scanner(e.get_operators())
+        tokens = scanner.tokenize(string)
+        parser = Parser(start='value_list')
+        return parser.parse(tokens)
+    except SystemExit:
+        raise PolicyError("parse error")
 
 def eval(e, string):
     code = get_code(e, string)
