@@ -57,7 +57,7 @@ class MOM:
 
         # Set built-in defaults
         self.config.add_section('main')
-        self.config.set('main', 'main-loop-interval', '60')
+        self.config.set('main', 'main-loop-interval', '5')
         self.config.set('main', 'host-monitor-interval', '5')
         self.config.set('main', 'guest-manager-interval', '5')
         self.config.set('main', 'guest-monitor-interval', '5')
