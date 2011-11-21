@@ -2,7 +2,7 @@
 
 Name:           mom
 Version:        0.2.1
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Dynamically manage system resources on virtualization hosts
 
 Group:          Applications/System
@@ -22,10 +22,6 @@ Requires(postun): initscripts
 Requires(preun): chkconfig
 Requires(preun): initscripts
 
-Patch0: mom-initscript-fixes.patch
-Patch1: mom-spec-fixes.patch
-Patch2: mom-remove-useless-shebang.patch
-
 %description
 MOM is a policy-driven tool that can be used to manage overcommitment on KVM 
 hosts. Using libvirt, MOM keeps track of active virtual machines on a host. At 
@@ -43,9 +39,6 @@ designed to accommodate new mechanisms such as cgroups.
 
 %prep
 %setup -q
-%patch0 -p 1
-%patch1 -p 1
-%patch2 -p 1
 
 %build
 %{__python} setup.py build
@@ -98,6 +91,9 @@ fi
 
 
 %changelog
+* Mon Nov 21 2011 Adam Litke <agl@us.ibm.com> - 0.2.1-6
+- Merge out-of-tree patches into mom
+
 * Fri Jan 7 2011 Adam Litke <agl@us.ibm.com> - 0.2.1-5
 - Address review comments by Michael Schwendt
 - Fix use of _defaultdocdir macro
