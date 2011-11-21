@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # Memory Overcommitment Manager
 # Copyright (C) 2010 Adam Litke, IBM Corporation
 # 
