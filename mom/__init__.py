@@ -14,8 +14,7 @@ from mom.RPCServer import RPCServer
 class MOM:
     def __init__(self, conf_file, conf_overrides=None):
         self._load_config(conf_file, conf_overrides)       
-        self._configure_logger()
-        self.logger = logging.getLogger('mom') 
+        self.logger = self._configure_logger()
         
     def run(self):
         # Set up a shared libvirt connection
@@ -23,7 +22,7 @@ class MOM:
         libvirt_iface = libvirtInterface(uri)
         
         # Start threads
-        self.logger.debug("MOM starting")
+        self.logger.info("MOM starting")
         self.config.set('__int__', 'running', '1')
         host_monitor = HostMonitor(self.config)
         guest_manager = GuestManager(self.config, libvirt_iface)
@@ -100,7 +99,7 @@ class MOM:
         self.config.set('__int__', 'plot-subdir', plot_subdir)
 
     def _configure_logger(self):    
-        logger = logging.getLogger()
+        logger = logging.getLogger('mom')
         
         verbosity = self.config.get('logging', 'verbosity').lower()
         level = log_set_verbosity(logger, verbosity)
@@ -116,6 +115,7 @@ class MOM:
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+        return logger
     
     def _get_plot_subdir(self, basedir):
         """
