@@ -1,23 +1,30 @@
-# sitelib for noarch packages, sitearch for others (remove the unneeded one)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
-Name:		mom           
+Name:           mom
 Version:        0.2.1
-Release:        1%{?dist}
+Release:        5%{?dist}
 Summary:        Dynamically manage system resources on virtualization hosts
 
 Group:          Applications/System
 License:        GPLv2
 URL:            http://wiki.github.com/aglitke/mom
-Source0:        http://github.com/downloads/aglitke/mom/mom-0.2.1.tar.gz
+Source0:        http://github.com/downloads/aglitke/mom/%{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildArch:      noarch
 BuildRequires:  python-devel
-Requires:	libvirt, libvirt-python
+
+# MOM makes use of libvirt by way of the python bindings to monitor and
+# interact with virtual machines.
+Requires:       libvirt, libvirt-python
 
 Requires(post): chkconfig
 Requires(postun): initscripts
 Requires(preun): chkconfig
 Requires(preun): initscripts
+
+Patch0: mom-initscript-fixes.patch
+Patch1: mom-spec-fixes.patch
+Patch2: mom-remove-useless-shebang.patch
 
 %description
 MOM is a policy-driven tool that can be used to manage overcommitment on KVM 
@@ -32,18 +39,29 @@ trigger reconfiguration of the system’s overcommitment mechanisms. Currently
 MOM supports control of memory ballooning and KSM but the architecture is 
 designed to accommodate new mechanisms such as cgroups.
 
+
+
 %prep
 %setup -q
-
+%patch0 -p 1
+%patch1 -p 1
+%patch2 -p 1
 
 %build
-
+%{__python} setup.py build
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python} setup.py install -O1 --root $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%_initddir
-cp contrib/momd.init $RPM_BUILD_ROOT/%_initddir/momd
+%{__python} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+install -Dp contrib/momd.init $RPM_BUILD_ROOT/%{_initrddir}/momd
+
+cp $RPM_BUILD_ROOT/%{_defaultdocdir}/%{name}/examples/mom-balloon+ksm.conf \
+   $RPM_BUILD_ROOT/%{_sysconfdir}/momd.conf
+
+# Correct the installed location of documentation files
+mv $RPM_BUILD_ROOT/%{_defaultdocdir}/%{name} \
+   $RPM_BUILD_ROOT/%{_defaultdocdir}/%{name}-%{version}
+cp LICENSE README $RPM_BUILD_ROOT/%{_defaultdocdir}/%{name}-%{version}
 
 
 %clean
@@ -51,7 +69,6 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %post
-# This adds the proper /etc/rc*.d links for the script
 /sbin/chkconfig --add momd
 
 
@@ -70,12 +87,32 @@ fi
 
 %files
 %defattr(-,root,root,-)
-%(_bindir)/usr/sbin/momd
-%_initddir/momd
-%doc /usr/share/doc/mom/examples/*
+%{_sbindir}/momd
+%{_initrddir}/momd
 %{python_sitelib}/*
+%config(noreplace) %{_sysconfdir}/momd.conf
+
+# The use of '_defaultdocdir' conflicts with 'doc'. Therefore, 'doc' MUST NOT
+# be used to include additional documentation files so long as this is in use.
+%{_defaultdocdir}/%{name}-%{version}/
 
 
 %changelog
-* Mon Sep 27 2010 Adam Litke <agl@us.ibm.com> - 0.2.1
+* Fri Jan 7 2011 Adam Litke <agl@us.ibm.com> - 0.2.1-5
+- Address review comments by Michael Schwendt
+- Fix use of _defaultdocdir macro
+- Add some comments to the spec file
+
+* Tue Oct 26 2010 Adam Litke <agl@us.ibm.com> - 0.2.1-4
+- Third round of package review comments
+- Remove useless shebang on non-executable python script
+
+* Tue Oct 26 2010 Adam Litke <agl@us.ibm.com> - 0.2.1-3
+- Second round of package review comments
+- Add a default config file: /etc/momd.conf
+
+* Wed Oct 13 2010 Adam Litke <agl@us.ibm.com> - 0.2.1-2
+- Address initial package review comments
+
+* Mon Sep 27 2010 Adam Litke <agl@us.ibm.com> - 0.2.1-1
 - Initial package
