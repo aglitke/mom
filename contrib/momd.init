@@ -2,7 +2,7 @@
 #
 # momd - Dynamic control of virtualized system resources
 #
-# chkconfig:   345 98 2
+# chkconfig:   - 98 2
 # description: Memory Overcommitment Manager - Dynamic control of virtualized \
 # system resources
 
@@ -12,11 +12,10 @@
 # Required-Stop: libvirtd
 # Should-Start: 
 # Should-Stop: 
-# Default-Start: 3 4 5 
+# Default-Start: 
 # Default-Stop: 0 1 2 6
 # Short-Description: Memory Overcommitment Manager
-# Description: Memory Overcommitment Manager - Dynamic control of virtualized 
-# system resources
+# Description: Dynamic control of virtualized system resources
 ### END INIT INFO
 
 # Source function library.
