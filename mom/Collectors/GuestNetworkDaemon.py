@@ -17,6 +17,7 @@
 import sys
 import signal
 import socket
+from subprocess import *
 import ConfigParser
 import logging
 from mom.Collectors.Collector import *
@@ -76,12 +77,40 @@ class GuestNetworkDaemon(Collector):
     """
     
     def __init__(self, properties):
-        self.ip = properties['ip']
+        self.logger = logging.getLogger('mom.Collectors.GuestNetworkDaemon')
+        self.name = properties['name']
+        self.ip = self.get_guest_ip(properties)
         self.port = 2187              # XXX: This needs to be configurable
         self.socket = None
-        self.name = properties['name']
         self.state = 'ok'
-        self.logger = logging.getLogger('mom.Collectors.GuestNetworkDaemon')
+
+    def get_guest_ip(self, properties):
+        """
+        There is no simple, standardized way to determine a guest's IP address.
+        We side-step the problem and make use of a helper program if specified.
+        
+        XXX: This is a security hole!  We are running a user-specified command!
+        """
+        name = properties['name']
+        try:
+            prog = properties['config']['name-to-ip-helper']
+        except KeyError:
+            return None
+        try:
+            output = Popen([prog, name], stdout=PIPE).communicate()[0]
+        except OSError, (errno, strerror):
+            self.logger.warn("Cannot call name-to-ip-helper: %s", strerror)
+            return None
+        matches = re.findall("^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})",
+                             output, re.M)
+        if len(matches) is not 1:
+            self.logger.warn("Output from name-to-ip-helper %s is not an IP " \
+                             "address. (output = '%s')", name, output)
+            return None
+        else:
+            ip = matches[0]
+            self.logger.debug("Guest %s has IP address %s", name, ip)
+            return ip
 
     def connect(self):
         try:

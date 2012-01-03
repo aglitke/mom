@@ -69,10 +69,7 @@ class GuestMonitor(Monitor, threading.Thread):
         data['name'] = self.libvirt_iface.domainGetName(self.guest_domain)
         data['pid'] = self.get_guest_pid(data['uuid'])
         if None in data.values():
-                return None
-                
-        # The IP address is optional
-        data['ip'] = self.get_guest_ip(data['name'])
+                return None                
         return data
 
     def run(self):
@@ -100,32 +97,6 @@ class GuestMonitor(Monitor, threading.Thread):
                              uuid)
             return None
         return int(matches[0])
-        
-    def get_guest_ip(self, name):
-        """
-        There is no simple, standardized way to determine a guest's IP address.
-        We side-step the problem and make use of a helper program if specified.
-        
-        XXX: This is a security hole!  We are running a user-specified command!
-        """
-        if not self.config.has_option('guest', 'name-to-ip-helper'):
-            return None
-        prog = self.config.get('guest', 'name-to-ip-helper')
-        try:
-            output = Popen([prog, name], stdout=PIPE).communicate()[0]
-        except OSError, (errno, strerror):
-            self.logger.warn("Cannot call name-to-ip-helper: %s", strerror)
-            return None
-        matches = re.findall("^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})",
-                             output, re.M)
-        if len(matches) is not 1:
-            self.logger.warn("Output from name-to-ip-helper %s is not an IP " \
-                             "address. (output = '%s')", name, output)
-            return None
-        else:
-            ip = matches[0]
-            self.logger.debug("Guest %s has IP address %s", name, ip)
-            return ip
 
     def getGuestName(self):
         """
