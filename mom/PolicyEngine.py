@@ -25,14 +25,14 @@ class PolicyEngine(threading.Thread):
     sampling host and guest data, evaluating the policy and reporting the
     results to all enabled Controller plugins.
     """
-    def __init__(self, config, libvirt_iface, host_monitor, guest_manager):
+    def __init__(self, config, hypervisor_iface, host_monitor, guest_manager):
         threading.Thread.__init__(self, name="PolicyEngine")
         self.setDaemon(True)
         self.config = config
         self.logger = logging.getLogger('mom.PolicyEngine')
         self.policy_sem = threading.Semaphore()
         self.properties = {
-            'libvirt_iface': libvirt_iface,
+            'hypervisor_iface': hypervisor_iface,
             'host_monitor': host_monitor,
             'guest_manager': guest_manager,
         }

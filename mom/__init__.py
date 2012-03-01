@@ -5,7 +5,6 @@ import re
 import logging
 import logging.handlers
 from mom.LogUtils import *
-from mom.libvirtInterface import libvirtInterface
 from mom.HostMonitor import HostMonitor
 from mom.GuestManager import GuestManager
 from mom.PolicyEngine import PolicyEngine
@@ -17,16 +16,15 @@ class MOM:
         self.logger = self._configure_logger()
         
     def run(self):
-        # Set up a shared libvirt connection
-        uri = self.config.get('main', 'libvirt-hypervisor-uri')
-        libvirt_iface = libvirtInterface(uri)
-        
         # Start threads
         self.logger.info("MOM starting")
         self.config.set('__int__', 'running', '1')
         host_monitor = HostMonitor(self.config)
-        guest_manager = GuestManager(self.config, libvirt_iface)
-        policy_engine = PolicyEngine(self.config, libvirt_iface, host_monitor, \
+        hypervisor_iface = self.get_hypervisor_interface()
+        if not hypervisor_iface:
+            self.shutdown()
+        guest_manager = GuestManager(self.config, hypervisor_iface)
+        policy_engine = PolicyEngine(self.config, hypervisor_iface, host_monitor, \
                                      guest_manager)
         rpc_server = RPCServer(self.config, host_monitor, guest_manager, \
                                policy_engine)
@@ -59,6 +57,7 @@ class MOM:
         self.config.set('main', 'main-loop-interval', '5')
         self.config.set('main', 'host-monitor-interval', '5')
         self.config.set('main', 'guest-manager-interval', '5')
+        self.config.set('main', 'hypervisor-interface', 'libvirt')
         self.config.set('main', 'guest-monitor-interval', '5')
         self.config.set('main', 'policy-engine-interval', '10')
         self.config.set('main', 'sample-history-length', '10')
@@ -172,3 +171,13 @@ class MOM:
         if t.isAlive():
             t.join(timeout)
     
+    def get_hypervisor_interface(self):
+
+        name = self.config.get('main', 'hypervisor-interface').lower()
+        self.logger.info("hypervisor interface %s",name)
+        try:
+            module = __import__('mom.HypervisorInterfaces.' + name + 'Interface', None, None, name)
+            return module.instance(self.config)
+        except ImportError:
+            self.logger.error("Unable to import hypervisor interface: %s", name)
+            return None

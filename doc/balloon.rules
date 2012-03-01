@@ -26,8 +26,8 @@
 # introducing overhead through lots of small ballooning operations
 (def change_big_enough (guest new_val)
 {
-    (if (> (abs (- new_val guest.libvirt_curmem))
-           (* min_balloon_change_percent guest.libvirt_curmem))
+    (if (> (abs (- new_val guest.balloon_cur))
+           (* min_balloon_change_percent guest.balloon_cur))
         1 0)
 })
 
@@ -44,19 +44,19 @@
                                     (/ host_free_percent pressure_threshold))))
 
     # Given current conditions, determine the ideal guest memory size
-    (defvar guest_used_mem (- (guest.StatAvg "libvirt_curmem")
+    (defvar guest_used_mem (- (guest.StatAvg "balloon_cur")
                               (guest.StatAvg "mem_unused")))
     (defvar balloon_min (+ guest_used_mem
-                           (* guest_free_percent guest.libvirt_maxmem)))
+                           (* guest_free_percent guest.balloon_cur)))
     # But do not change it too fast
-    (defvar balloon_size (* guest.libvirt_curmem
+    (defvar balloon_size (* guest.balloon_cur
                             (- 1 max_balloon_change_percent)))
     (if (< balloon_size balloon_min)
         (set balloon_size balloon_min)
         0)
     # Set the new target for the BalloonController.  Only set it if the
     # value makes sense and is a large enough change to be worth it.   
-    (if (and (<= balloon_size guest.libvirt_maxmem)
+    (if (and (<= balloon_size guest.balloon_cur)
             (change_big_enough guest balloon_size))
         (guest.Control "balloon_target" balloon_size)
         0)
@@ -65,20 +65,20 @@
 (def grow_guest (guest)
 {
     # There is only work to do if the guest is ballooned
-    (if (< guest.libvirt_curmem guest.libvirt_maxmem) {
+    (if (< guest.balloon_cur guest.balloon_max) {
         # Minimally, increase so the guest has its desired free memory
-        (defvar guest_used_mem (- (guest.StatAvg "libvirt_curmem")
+        (defvar guest_used_mem (- (guest.StatAvg "balloon_cur")
                                   (guest.StatAvg "mem_unused")))
         (defvar balloon_min (+ guest_used_mem (* min_guest_free_percent
-                                                 guest.libvirt_maxmem)))
+                                                 guest.balloon_max)))
         # Otherwise, increase according to the max balloon change
-        (defvar balloon_size (* guest.libvirt_curmem
+        (defvar balloon_size (* guest.balloon_cur
                                 (+ 1 max_balloon_change_percent)))
 
         # Determine the new target for the BalloonController.  Only set
         # if the value is a large enough for the change to be worth it. 
-        (if (> balloon_size guest.libvirt_maxmem)
-            (set balloon_size guest.libvirt_maxmem) 0)
+        (if (> balloon_size guest.balloon_max)
+            (set balloon_size guest.balloon_max) 0)
         (if (< balloon_size balloon_min)
             (set balloon_size balloon_min) 0)
         (if (change_big_enough guest balloon_size)

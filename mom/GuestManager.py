@@ -19,7 +19,6 @@ import time
 import sys
 import re
 import logging
-from mom.libvirtInterface import libvirtInterface
 from mom.GuestMonitor import GuestMonitor
 
 class GuestManager(threading.Thread):
@@ -28,12 +27,12 @@ class GuestManager(threading.Thread):
     system.  When a new guest is discovered, a new GuestMonitor is spawned.
     When GuestMonitors stop running, they are removed from the list.
     """
-    def __init__(self, config, libvirt_iface):
+    def __init__(self, config, hypervisor_iface):
         threading.Thread.__init__(self, name='GuestManager')
         self.setDaemon(True)
         self.config = config
+        self.hypervisor_iface = hypervisor_iface
         self.logger = logging.getLogger('mom.GuestManager')
-        self.libvirt_iface = libvirt_iface
         self.guests = {}
         self.guests_sem = threading.Semaphore()
         self.start()
@@ -48,7 +47,12 @@ class GuestManager(threading.Thread):
         spawn_list = set(domain_list) - set(self.guests)
         self.guests_sem.release()
         for id in spawn_list:
-            guest = GuestMonitor(self.config, id, self.libvirt_iface)
+            info = self.hypervisor_iface.getVmInfo(id)
+            if info is None:
+                self.logger.error("Failed to get guest:%s information -- monitor "\
+                    "can't start", id)
+                continue
+            guest = GuestMonitor(self.config, info, self.hypervisor_iface)
             if guest.isAlive():
                 self.guests_sem.acquire()
                 if id not in self.guests:
@@ -82,7 +86,7 @@ class GuestManager(threading.Thread):
             # Check if the thread has died
             if not thread.isAlive():
                 del self.guests[id]
-            # Check if the domain has ended according to libvirt
+            # Check if the domain has ended according to hypervisor interface
             elif id not in domain_list:
                 thread.terminate()
                 del self.guests[id]
@@ -106,7 +110,7 @@ class GuestManager(threading.Thread):
         self.logger.info("Guest Manager starting");
         interval = self.config.getint('main', 'guest-manager-interval')
         while self.config.getint('__int__', 'running') == 1:
-            domain_list = self.libvirt_iface.listDomainsID()
+            domain_list = self.hypervisor_iface.getVmList()
             if domain_list is not None:
                 self.spawn_guest_monitors(domain_list)
                 self.check_threads(domain_list)
