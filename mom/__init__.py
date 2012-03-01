@@ -9,6 +9,7 @@ from mom.HostMonitor import HostMonitor
 from mom.GuestManager import GuestManager
 from mom.PolicyEngine import PolicyEngine
 from mom.RPCServer import RPCServer
+from mom.MOMFuncs import MOMFuncs
 
 class MOM:
     def __init__(self, conf_file, conf_overrides=None):
@@ -26,8 +27,12 @@ class MOM:
         guest_manager = GuestManager(self.config, hypervisor_iface)
         policy_engine = PolicyEngine(self.config, hypervisor_iface, host_monitor, \
                                      guest_manager)
-        rpc_server = RPCServer(self.config, host_monitor, guest_manager, \
-                               policy_engine)
+
+        threads = { 'host_monitor': host_monitor,
+                         'guest_manager': guest_manager,
+                         'policy_engine': policy_engine }
+        self.momFuncs = MOMFuncs(self.config, threads)
+        rpc_server = RPCServer(self.config, self.momFuncs)
 
         interval = self.config.getint('main', 'main-loop-interval')
         while self.config.getint('__int__', 'running') == 1:
@@ -181,3 +186,6 @@ class MOM:
         except ImportError:
             self.logger.error("Unable to import hypervisor interface: %s", name)
             return None
+
+    def getStatistics(self):
+        return self.funcs.getStatistics()
