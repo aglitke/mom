@@ -14,6 +14,7 @@
 # License along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
+import os
 from subprocess import *
 from mom.Collectors.Collector import *
 
@@ -30,6 +31,7 @@ class HostKSM(Collector):
         ksm_pages_volatile - The number of pages that are changing too fast to be shared
         ksm_full_scans - The number of times all mergeable memory areas have been scanned
         ksm_shareable - Estimated amount of host memory that is eligible for sharing 
+        ksmd_cpu_usage - The cpu usage of kernel thread ksmd during the monitor interval
     """
     
     sysfs_keys = [ 'full_scans', 'pages_sharing', 'pages_unshared', 'run',
@@ -38,6 +40,9 @@ class HostKSM(Collector):
     
     def __init__(self, properties):
         self.open_files()
+        self.interval = properties['interval']
+        self.pid = int(Popen(['pidof', 'ksmd'], stdout=PIPE).communicate()[0])
+        self.last_jiff = self.get_ksmd_jiffies()
 
     def __del__(self):
         for datum in self.sysfs_keys:
@@ -52,6 +57,22 @@ class HostKSM(Collector):
                 self.files[datum] = open(name, 'r')
             except IOError, (errno, msg):
                 raise FatalError("HostKSM: open %s failed: %s" % (name, msg))
+
+    def get_ksmd_jiffies(self):
+        return sum(map(int, file('/proc/%s/stat' % self.pid) \
+                   .read().split()[13:15]))
+
+    def get_ksmd_cpu_usage(self):
+        """
+        Calculate the cpu utilization of the ksmd kernel thread as a percentage.
+        """
+        cur_jiff = self.get_ksmd_jiffies()
+        # Get the number of jiffies used in this interval taking counter
+        # wrap-around into account.
+        interval_jiffs = (cur_jiff - self.last_jiff) % 2**32
+        total_jiffs = os.sysconf('SC_CLK_TCK') * self.interval
+        # Calculate percentage of total jiffies during this interval.
+        return 100 * interval_jiffs / total_jiffs
 
     def get_shareable_mem(self):
         """
@@ -75,11 +96,13 @@ class HostKSM(Collector):
             file.seek(0)
             data['ksm_' + datum] = parse_int('(.*)', file.read())
         data['ksm_shareable'] = self.get_shareable_mem()
+        data['ksmd_cpu_usage'] = self.get_ksmd_cpu_usage()
         return data
         
     def getFields(self=None):
         f = lambda x: 'ksm_' + x
-        return set(map(f, HostKSM.sysfs_keys)) | set(['ksm_shareable'])
+        return set(map(f, HostKSM.sysfs_keys)) | set(['ksm_shareable', \
+                   'ksmd_cpu_usage'])
 
 def instance(properties):
     return HostKSM(properties)
