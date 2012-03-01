@@ -131,7 +131,6 @@ class libvirtInterface(HypervisorInterface):
             return None
         return int(matches[0])
 
-
     def _domainGetMemoryStats(self, domain):
         try:
             stats = domain.memoryStats()
@@ -223,6 +222,18 @@ class libvirtInterface(HypervisorInterface):
             if self._domainSetBalloonTarget(dom, target):
                 name = self._domainGetName(dom)
                 self.logger.warn("Error while ballooning guest:%i", name)
+
+    def ksmTune(self, tuningParams):
+        def write_value(fname, value):
+            try:
+                file = open(fname, 'w')
+                file.write(str(value))
+            except IOError, (errno, strerror):
+                self.logger.warn("KSM: Failed to write %s: %s", fname, strerror)
+            file.close()
+
+        for (key, val) in tuningParams.items():
+            write_value('/sys/kernel/mm/ksm/%s' % key, val)
 
 def instance(config):
     return libvirtInterface(config)

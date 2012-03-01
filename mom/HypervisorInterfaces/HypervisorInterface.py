@@ -53,14 +53,14 @@ class HypervisorInterface:
 
     def setVmBalloonTarget(self, uuid):
         """
-        This method set the balloon target of a given guest. It's used by the
+        This method sets the balloon target of a given guest. It's used by the
         controller Balloon to inflate or deflate the balloon according to this
         guest's memory usage.
         """
         pass
 
-    def ksmTune(self):
+    def ksmTune(self, tuningParams):
         """
-        TBD
+        This method is used to set KSM tuning parameters by the controller KSM.
         """
         pass

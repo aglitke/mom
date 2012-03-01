@@ -17,6 +17,7 @@
 import sys
 sys.path.append('/usr/share/vdsm')
 import API
+import supervdsm
 import logging
 import traceback
 from mom.HypervisorInterfaces.HypervisorInterface import *
@@ -130,6 +131,11 @@ class vdsmInterface(HypervisorInterface):
     def getVmBalloonInfo(self, uuid):
         balloon_stats = ['balloon_cur', 'balloon_max']
 
+    def ksmTune(self, tuningParams):
+        # When MOM is lauched by vdsm, it's running without root privileges.
+        # So we need resort to supervdsm to set the KSM parameters.
+        superVdsm = supervdsm.getProxy()
+        superVdsm.ksmTune(tuningParams)
 
 class vdsmException(Exception):
     def __init__(self, msg, logger):

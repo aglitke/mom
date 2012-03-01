@@ -25,6 +25,7 @@ class KSM:
         - ksm_sleep_millisecs - Set the time to sleep between scans
     """
     def __init__(self, properties):
+        self.hypervisor_iface = properties['hypervisor_iface']
         self.logger = logging.getLogger('mom.Controllers.KSM')
         self.cur = { 'run': '0', 'pages_to_scan': '0', 'sleep_millisecs': '0' }
         
@@ -50,9 +51,7 @@ class KSM:
             for (k, v) in self.cur.items():
                 args.append("%s:%s" % (k,v))
             self.logger.info(msg, ' '.join(args))                
-        for (key, val) in outputs.items():
-            self.write_value('/sys/kernel/mm/ksm/%s' % key, val)
-            self.cur[key] = val
+        self.hypervisor_iface.ksmTune(outputs)
 
 def instance(properties):
     return KSM(properties)
