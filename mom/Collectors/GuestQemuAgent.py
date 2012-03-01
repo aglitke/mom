@@ -41,8 +41,7 @@ class GuestQemuAgent(Collector):
             socket_path = properties['config']['socket_path']
         except KeyError:
             socket_path = '/var/lib/libvirt/qemu'
-        self.sockets = [ "%s/va-%s-virtio.sock" % (socket_path, self.name),
-                         "%s/va-%s-isa.sock" % (socket_path, self.name) ]
+        self.sockets = [ "%s/%s.agent" % (socket_path, self.name) ]
         self.agent = None
         self.logger = logging.getLogger('mom.Collectors.GuestQemuAgent')
         
