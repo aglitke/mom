@@ -100,6 +100,9 @@ class MOM:
 
     def _configure_logger(self):    
         logger = logging.getLogger('mom')
+        # MOM is a module with its own logging facility. Don't impact any
+        # logging that might be done by the program that loads this.
+        logger.propagate = False
         
         verbosity = self.config.get('logging', 'verbosity').lower()
         level = log_set_verbosity(logger, verbosity)
