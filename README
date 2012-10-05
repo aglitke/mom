@@ -1,3 +1,8 @@
+###
+# Please Note: MOM is in the process of migrating to ovirt.org. For the latest
+# source, please clone git://gerrit.ovirt.org/mom
+###
+
 Memory Overcommitment Manager
 Release 0.1.0
 04/13/2010
